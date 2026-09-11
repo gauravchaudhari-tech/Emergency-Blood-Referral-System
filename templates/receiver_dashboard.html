@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Receiver Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">
+            Home
+        </a>
+
+        <a href="/receiver-dashboard">
+            Dashboard
+        </a>
+
+        <a href="/search">
+            Search
+        </a>
+
+        <a href="/profile">
+            Profile
+        </a>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+    </nav>
+
+</header>
+
+
+
+<!-- =====================================================
+     DASHBOARD
+===================================================== -->
+
+<div class="dashboard">
+
+    <!-- =================================================
+         WELCOME
+    ================================================== -->
+
+    <h1>
+        Receiver Dashboard
+    </h1>
+
+    <p class="welcome">
+        Welcome, {{ receiver["name"] }}! 👋
+    </p>
+
+
+
+    <!-- =================================================
+         RECEIVER INFORMATION
+    ================================================== -->
+
+    <div class="dashboard-card">
+
+        <div class="blood-large">
+
+            {{ receiver["blood_group"] }}
+
+        </div>
+
+
+        <div>
+
+            <h2>
+                {{ receiver["name"] }}
+            </h2>
+
+
+            <p>
+                🏥 {{ receiver["hospital"] }}
+            </p>
+
+
+            <p>
+                📍 {{ receiver["city"] }}
+            </p>
+
+
+            <p>
+
+                🩸 Required Blood:
+
+                <strong>
+                    {{ receiver["blood_group"] }}
+                </strong>
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         MATCHING DONORS
+    ================================================== -->
+
+    <h2 class="section-title">
+
+        🩸 Matching Donors
+
+    </h2>
+
+
+    <p class="section-info">
+
+        Donors with blood group
+        <strong>{{ receiver["blood_group"] }}</strong>
+        are shown below.
+
+        Donors from
+        <strong>{{ receiver["city"] }}</strong>
+        are displayed first.
+
+    </p>
+
+
+
+    <!-- =================================================
+         SAME CITY DONORS
+    ================================================== -->
+
+    {% if same_city_donors %}
+
+        <h3 class="sub-title">
+
+            📍 Donors in {{ receiver["city"] }}
+
+        </h3>
+
+
+        <div class="donor-list">
+
+            {% for donor in same_city_donors %}
+
+                <div class="donor-card">
+
+                    <div class="donor-icon">
+                        🩸
+                    </div>
+
+
+                    <div class="donor-details">
+
+                        <h3>
+                            {{ donor["name"] }}
+                        </h3>
+
+
+                        <p>
+
+                            🩸 Blood Group:
+
+                            <strong>
+                                {{ donor["blood_group"] }}
+                            </strong>
+
+                        </p>
+
+
+                        <p>
+
+                            📍 City:
+
+                            {{ donor["city"] }}
+
+                        </p>
+
+
+                        <p>
+
+                            📞 Phone:
+
+                            {{ donor["phone"] }}
+
+                        </p>
+
+
+                        <span class="match-badge">
+
+                            SAME CITY MATCH
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- =================================================
+         OTHER CITY DONORS
+    ================================================== -->
+
+    {% if other_city_donors %}
+
+        <h3 class="sub-title">
+
+            🌎 Donors from Other Cities
+
+        </h3>
+
+
+        <div class="donor-list">
+
+            {% for donor in other_city_donors %}
+
+                <div class="donor-card">
+
+                    <div class="donor-icon">
+                        🩸
+                    </div>
+
+
+                    <div class="donor-details">
+
+                        <h3>
+                            {{ donor["name"] }}
+                        </h3>
+
+
+                        <p>
+
+                            🩸 Blood Group:
+
+                            <strong>
+                                {{ donor["blood_group"] }}
+                            </strong>
+
+                        </p>
+
+
+                        <p>
+
+                            📍 City:
+
+                            {{ donor["city"] }}
+
+                        </p>
+
+
+                        <p>
+
+                            📞 Phone:
+
+                            {{ donor["phone"] }}
+
+                        </p>
+
+
+                        <span class="other-match-badge">
+
+                            OTHER CITY MATCH
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- =================================================
+         NO DONOR FOUND
+    ================================================== -->
+
+    {% if not same_city_donors and not other_city_donors %}
+
+        <div class="no-data">
+
+            <h2>
+                😔 No Matching Donor Found
+            </h2>
+
+
+            <p>
+
+                Currently, no donor is registered
+                with blood group
+
+                <strong>
+                    {{ receiver["blood_group"] }}
+                </strong>.
+
+            </p>
+
+
+            <p>
+
+                You can check again later when
+                new donors register.
+
+            </p>
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- =================================================
+         CREATE NEW BLOOD REQUEST
+    ================================================== -->
+
+    <h2 class="section-title">
+
+        Create New Blood Request
+
+    </h2>
+
+
+    <div class="request-form">
+
+        <form method="POST"
+              action="/create-request">
+
+
+            <label>
+                Patient Name
+            </label>
+
+
+            <input
+                type="text"
+                name="patient_name"
+                value="{{ receiver['name'] }}"
+                required
+            >
+
+
+
+            <label>
+                Blood Group Required
+            </label>
+
+
+            <select
+                name="blood_group"
+                required
+            >
+
+                <option value="">
+                    Select Blood Group
+                </option>
+
+
+                <option
+                    value="A+"
+                    {% if receiver["blood_group"] == "A+" %}
+                        selected
+                    {% endif %}
+                >
+                    A+
+                </option>
+
+
+                <option
+                    value="A-"
+                    {% if receiver["blood_group"] == "A-" %}
+                        selected
+                    {% endif %}
+                >
+                    A-
+                </option>
+
+
+                <option
+                    value="B+"
+                    {% if receiver["blood_group"] == "B+" %}
+                        selected
+                    {% endif %}
+                >
+                    B+
+                </option>
+
+
+                <option
+                    value="B-"
+                    {% if receiver["blood_group"] == "B-" %}
+                        selected
+                    {% endif %}
+                >
+                    B-
+                </option>
+
+
+                <option
+                    value="AB+"
+                    {% if receiver["blood_group"] == "AB+" %}
+                        selected
+                    {% endif %}
+                >
+                    AB+
+                </option>
+
+
+                <option
+                    value="AB-"
+                    {% if receiver["blood_group"] == "AB-" %}
+                        selected
+                    {% endif %}
+                >
+                    AB-
+                </option>
+
+
+                <option
+                    value="O+"
+                    {% if receiver["blood_group"] == "O+" %}
+                        selected
+                    {% endif %}
+                >
+                    O+
+                </option>
+
+
+                <option
+                    value="O-"
+                    {% if receiver["blood_group"] == "O-" %}
+                        selected
+                    {% endif %}
+                >
+                    O-
+                </option>
+
+            </select>
+
+
+
+            <label>
+                Hospital
+            </label>
+
+
+            <input
+                type="text"
+                name="hospital"
+                value="{{ receiver['hospital'] }}"
+                required
+            >
+
+
+
+            <label>
+                City
+            </label>
+
+
+            <input
+                type="text"
+                name="city"
+                value="{{ receiver['city'] }}"
+                required
+            >
+
+
+
+            <button type="submit">
+
+                Create Blood Request
+
+            </button>
+
+
+        </form>
+
+    </div>
+
+
+
+    <!-- =================================================
+         MY REQUESTS
+    ================================================== -->
+
+    <h2 class="section-title">
+
+        My Requests
+
+    </h2>
+
+
+
+    {% if requests %}
+
+        <div class="request-list">
+
+            {% for req in requests %}
+
+                <div class="request-card">
+
+
+                    <h3>
+
+                        Request #{{ req["id"] }}
+
+                    </h3>
+
+
+                    <p>
+
+                        Blood Group:
+
+                        <strong>
+                            {{ req["blood_group"] }}
+                        </strong>
+
+                    </p>
+
+
+                    <p>
+
+                        Hospital:
+
+                        {{ req["hospital"] }}
+
+                    </p>
+
+
+                    <p>
+
+                        City:
+
+                        {{ req["city"] }}
+
+                    </p>
+
+
+                    <span class="status">
+
+                        {{ req["status"] }}
+
+                    </span>
+
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+
+    {% else %}
+
+        <p class="no-data">
+
+            No blood requests yet.
+
+        </p>
+
+    {% endif %}
+
+
+</div>
+
+
+</body>
+
+</html>

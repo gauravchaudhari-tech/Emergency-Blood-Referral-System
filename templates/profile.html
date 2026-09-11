@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>My Profile</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">
+            Home
+        </a>
+
+        {% if user["role"] == "donor" %}
+
+            <a href="/donor-dashboard">
+                Dashboard
+            </a>
+
+        {% elif user["role"] == "receiver" %}
+
+            <a href="/receiver-dashboard">
+                Dashboard
+            </a>
+
+        {% endif %}
+
+        <a href="/profile">
+            Profile
+        </a>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+    </nav>
+
+</header>
+
+
+<div class="profile-container">
+
+    <h1>My Profile</h1>
+
+
+    <div class="profile-card">
+
+        <div class="profile-icon">
+            👤
+        </div>
+
+
+        <h2>
+            {{ user["name"] }}
+        </h2>
+
+
+        <p>
+            Email:
+            {{ user["email"] }}
+        </p>
+
+
+        <p>
+            Account Type:
+            <strong>
+                {{ user["role"]|capitalize }}
+            </strong>
+        </p>
+
+
+        {% if donor %}
+
+        <hr>
+
+        <p>
+            Blood Group:
+            <strong>
+                {{ donor["blood_group"] }}
+            </strong>
+        </p>
+
+        <p>
+            Phone:
+            {{ donor["phone"] }}
+        </p>
+
+        <p>
+            City:
+            {{ donor["city"] }}
+        </p>
+
+        {% endif %}
+
+
+        {% if receiver %}
+
+        <hr>
+
+        <p>
+            Required Blood Group:
+            <strong>
+                {{ receiver["blood_group"] }}
+            </strong>
+        </p>
+
+        <p>
+            Hospital:
+            {{ receiver["hospital"] }}
+        </p>
+
+        <p>
+            City:
+            {{ receiver["city"] }}
+        </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

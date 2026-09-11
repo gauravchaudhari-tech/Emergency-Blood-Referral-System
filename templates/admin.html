@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">
+            Home
+        </a>
+
+        <a href="/admin">
+            Admin
+        </a>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+    </nav>
+
+</header>
+
+
+<div class="admin-container">
+
+    <h1>Admin Dashboard</h1>
+
+
+    <div class="stats">
+
+        <div class="stat-box">
+
+            <h2>
+                {{ donors|length }}
+            </h2>
+
+            <p>
+                Total Donors
+            </p>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h2>
+                {{ receivers|length }}
+            </h2>
+
+            <p>
+                Total Receivers
+            </p>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h2>
+                {{ requests|length }}
+            </h2>
+
+            <p>
+                Blood Requests
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <h2 class="section-title">
+        Registered Donors
+    </h2>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <tr>
+
+                <th>ID</th>
+                <th>Name</th>
+                <th>Blood Group</th>
+                <th>Phone</th>
+                <th>City</th>
+
+            </tr>
+
+
+            {% for donor in donors %}
+
+            <tr>
+
+                <td>
+                    {{ donor["id"] }}
+                </td>
+
+                <td>
+                    {{ donor["name"] }}
+                </td>
+
+                <td>
+                    <strong>
+                        {{ donor["blood_group"] }}
+                    </strong>
+                </td>
+
+                <td>
+                    {{ donor["phone"] }}
+                </td>
+
+                <td>
+                    {{ donor["city"] }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+
+    <h2 class="section-title">
+        Registered Receivers
+    </h2>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <tr>
+
+                <th>ID</th>
+                <th>Name</th>
+                <th>Blood Group</th>
+                <th>Hospital</th>
+                <th>City</th>
+
+            </tr>
+
+
+            {% for receiver in receivers %}
+
+            <tr>
+
+                <td>
+                    {{ receiver["id"] }}
+                </td>
+
+                <td>
+                    {{ receiver["name"] }}
+                </td>
+
+                <td>
+                    <strong>
+                        {{ receiver["blood_group"] }}
+                    </strong>
+                </td>
+
+                <td>
+                    {{ receiver["hospital"] }}
+                </td>
+
+                <td>
+                    {{ receiver["city"] }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+
+    <h2 class="section-title">
+        Blood Requests
+    </h2>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <tr>
+
+                <th>ID</th>
+                <th>Patient</th>
+                <th>Blood Group</th>
+                <th>Hospital</th>
+                <th>City</th>
+                <th>Status</th>
+
+            </tr>
+
+
+            {% for req in requests %}
+
+            <tr>
+
+                <td>
+                    {{ req["id"] }}
+                </td>
+
+                <td>
+                    {{ req["patient_name"] }}
+                </td>
+
+                <td>
+                    <strong>
+                        {{ req["blood_group"] }}
+                    </strong>
+                </td>
+
+                <td>
+                    {{ req["hospital"] }}
+                </td>
+
+                <td>
+                    {{ req["city"] }}
+                </td>
+
+                <td>
+                    <span class="status">
+                        {{ req["status"] }}
+                    </span>
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

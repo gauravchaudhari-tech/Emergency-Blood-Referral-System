@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Donor Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">Home</a>
+
+        <a href="/donor-dashboard">
+            Dashboard
+        </a>
+
+        <a href="/profile">
+            Profile
+        </a>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+    </nav>
+
+</header>
+
+
+<div class="dashboard">
+
+    <h1>Donor Dashboard</h1>
+
+    <p class="welcome">
+        Welcome, {{ donor["name"] }}!
+    </p>
+
+
+    <div class="dashboard-card">
+
+        <div class="blood-large">
+            {{ donor["blood_group"] }}
+        </div>
+
+        <div>
+
+            <h2>
+                {{ donor["name"] }}
+            </h2>
+
+            <p>
+                📞 {{ donor["phone"] }}
+            </p>
+
+            <p>
+                📍 {{ donor["city"] }}
+            </p>
+
+            <p>
+                🩸 Blood Group:
+                <strong>
+                    {{ donor["blood_group"] }}
+                </strong>
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="dashboard-actions">
+
+        <a href="/profile" class="btn">
+            View Profile
+        </a>
+
+        <a href="/requests" class="btn dark-btn">
+            View Blood Requests
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

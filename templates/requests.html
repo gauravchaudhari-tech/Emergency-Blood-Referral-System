@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Blood Requests</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">Home</a>
+
+        {% if session.get("role") == "donor" %}
+
+            <a href="/donor-dashboard">
+                Dashboard
+            </a>
+
+        {% elif session.get("role") == "receiver" %}
+
+            <a href="/receiver-dashboard">
+                Dashboard
+            </a>
+
+        {% endif %}
+
+        <a href="/requests">
+            Requests
+        </a>
+
+        <a href="/logout">
+            Logout
+        </a>
+
+    </nav>
+
+</header>
+
+
+<div class="admin-container">
+
+    <h1>Blood Requests</h1>
+
+
+    {% if requests %}
+
+    <div class="request-list">
+
+        {% for req in requests %}
+
+        <div class="request-card">
+
+            <div>
+
+                <h2>
+                    Request #{{ req["id"] }}
+                </h2>
+
+                <p>
+                    Patient:
+                    <strong>
+                        {{ req["patient_name"] }}
+                    </strong>
+                </p>
+
+                <p>
+                    Blood Group:
+                    <strong>
+                        {{ req["blood_group"] }}
+                    </strong>
+                </p>
+
+                <p>
+                    Hospital:
+                    {{ req["hospital"] }}
+                </p>
+
+                <p>
+                    City:
+                    {{ req["city"] }}
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <span class="status">
+                    {{ req["status"] }}
+                </span>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% else %}
+
+    <div class="no-result">
+
+        <h2>No Requests</h2>
+
+        <p>
+            There are currently no blood requests.
+        </p>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>

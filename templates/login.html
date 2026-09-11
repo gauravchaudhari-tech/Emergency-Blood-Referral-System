@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Login - SmartBlood</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">Home</a>
+
+        <a href="/donor-register">
+            Donor
+        </a>
+
+        <a href="/receiver-register">
+            Receiver
+        </a>
+
+        <a href="/login">
+            Login
+        </a>
+
+    </nav>
+
+</header>
+
+
+<div class="form-container">
+
+    <h1>Login</h1>
+
+    <p class="form-info">
+        Login to your SmartBlood account
+    </p>
+
+
+    {% if error %}
+
+    <div class="error">
+        {{ error }}
+    </div>
+
+    {% endif %}
+
+
+    <form method="POST">
+
+        <label>Email</label>
+
+        <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+        >
+
+
+        <label>Password</label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+        >
+
+
+        <button type="submit">
+            Login
+        </button>
+
+    </form>
+
+
+    <div class="login-info">
+
+        <p><strong>Admin Login</strong></p>
+
+        <p>Email: admin@gmail.com</p>
+
+        <p>Password: admin123</p>
+
+    </div>
+
+
+</div>
+
+</body>
+</html>

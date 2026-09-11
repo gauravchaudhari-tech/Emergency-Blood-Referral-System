@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Search Donors</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">Home</a>
+
+        <a href="/donor-register">
+            Donate
+        </a>
+
+        <a href="/receiver-register">
+            Need Blood
+        </a>
+
+        <a href="/search">
+            Search
+        </a>
+
+        <a href="/login">
+            Login
+        </a>
+
+    </nav>
+
+</header>
+
+
+
+<div class="search-container">
+
+    <h1>Find Blood Donor</h1>
+
+    <p class="form-info">
+        Search donors by blood group and city
+    </p>
+
+
+
+    <!-- SEARCH FORM -->
+
+    <form method="GET"
+          action="/search"
+          class="search-form">
+
+
+        <label>
+            Blood Group
+        </label>
+
+
+        <select name="blood_group" required>
+
+            <option value="">
+                Select Blood Group
+            </option>
+
+            <option value="A+"
+                {% if blood_group == "A+" %}selected{% endif %}>
+                A+
+            </option>
+
+            <option value="A-"
+                {% if blood_group == "A-" %}selected{% endif %}>
+                A-
+            </option>
+
+            <option value="B+"
+                {% if blood_group == "B+" %}selected{% endif %}>
+                B+
+            </option>
+
+            <option value="B-"
+                {% if blood_group == "B-" %}selected{% endif %}>
+                B-
+            </option>
+
+            <option value="AB+"
+                {% if blood_group == "AB+" %}selected{% endif %}>
+                AB+
+            </option>
+
+            <option value="AB-"
+                {% if blood_group == "AB-" %}selected{% endif %}>
+                AB-
+            </option>
+
+            <option value="O+"
+                {% if blood_group == "O+" %}selected{% endif %}>
+                O+
+            </option>
+
+            <option value="O-"
+                {% if blood_group == "O-" %}selected{% endif %}>
+                O-
+            </option>
+
+        </select>
+
+
+
+        <label>
+            City
+        </label>
+
+
+        <input
+            type="text"
+            name="city"
+            placeholder="Enter city"
+            value="{{ city }}"
+        >
+
+
+
+        <button type="submit">
+            🔍 Search Donors
+        </button>
+
+    </form>
+
+
+
+    <!-- RESULTS -->
+
+    {% if blood_group %}
+
+
+        <div class="result-header">
+
+            <h2 class="result-title">
+                Available Donors
+            </h2>
+
+            <p>
+                Blood Group:
+                <strong>{{ blood_group }}</strong>
+
+                {% if city %}
+                    | Searching near:
+                    <strong>{{ city }}</strong>
+                {% endif %}
+            </p>
+
+        </div>
+
+
+
+        {% if donors %}
+
+
+            <!--
+                SAME CITY DONORS
+                First priority
+            -->
+
+            {% if city %}
+
+                {% set same_city_found = false %}
+
+
+                {% for donor in donors %}
+
+                    {% if donor["city"]|trim|lower == city|trim|lower %}
+
+                        {% if not same_city_found %}
+
+                            {% set same_city_found = true %}
+
+                            <div class="matching-section">
+
+                                <h2 class="section-title">
+                                    📍 Donors in {{ city }}
+                                </h2>
+
+                                <p class="section-info">
+                                    These donors match your blood group
+                                    and are from your selected city.
+                                </p>
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="donor-card same-city">
+
+                            <div class="blood-circle">
+
+                                {{ donor["blood_group"] }}
+
+                            </div>
+
+
+                            <div class="donor-info">
+
+                                <h2>
+                                    {{ donor["name"] }}
+                                </h2>
+
+                                <p>
+                                    📍 {{ donor["city"] }}
+                                </p>
+
+                                <p>
+                                    📞 {{ donor["phone"] }}
+                                </p>
+
+                                <p>
+
+                                    Blood Group:
+
+                                    <strong>
+                                        {{ donor["blood_group"] }}
+                                    </strong>
+
+                                </p>
+
+                            </div>
+
+
+                            <div class="match-status">
+
+                                <span class="available">
+                                    ⭐ Nearby Match
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            {% endif %}
+
+
+
+            <!--
+                OTHER CITY DONORS
+                Backup matching donors
+            -->
+
+            {% if city %}
+
+                <div class="other-city-section">
+
+                    <h2 class="section-title">
+                        🌎 Donors from Other Cities
+                    </h2>
+
+                    <p class="section-info">
+                        No problem if a donor is not available
+                        in your city. These donors have the same
+                        blood group and may be contacted.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+
+
+            {% for donor in donors %}
+
+                {% if not city or donor["city"]|trim|lower != city|trim|lower %}
+
+
+                    <div class="donor-card other-city">
+
+                        <div class="blood-circle">
+
+                            {{ donor["blood_group"] }}
+
+                        </div>
+
+
+                        <div class="donor-info">
+
+                            <h2>
+                                {{ donor["name"] }}
+                            </h2>
+
+
+                            <p>
+                                📍 {{ donor["city"] }}
+                            </p>
+
+
+                            <p>
+                                📞 {{ donor["phone"] }}
+                            </p>
+
+
+                            <p>
+
+                                Blood Group:
+
+                                <strong>
+                                    {{ donor["blood_group"] }}
+                                </strong>
+
+                            </p>
+
+                        </div>
+
+
+                        <div class="match-status">
+
+                            <span class="available">
+                                ✔ Blood Match
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                {% endif %}
+
+            {% endfor %}
+
+
+
+        {% else %}
+
+
+            <!-- NO DONOR -->
+
+            <div class="no-result">
+
+                <h2>
+                    ❌ No Donor Found
+                </h2>
+
+                <p>
+
+                    No donor with blood group
+
+                    <strong>
+                        {{ blood_group }}
+                    </strong>
+
+                    is currently registered.
+
+                </p>
+
+                {% if city %}
+
+                    <p>
+                        Try searching another city or
+                        check again later.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+
+        {% endif %}
+
+
+    {% endif %}
+
+
+</div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Blood System</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+   <nav>
+
+        <a href="/">Home</a>
+
+        <a href="/donor-register">
+            Donate Blood
+        </a>
+
+        <a href="/receiver-register">
+            Need Blood
+        </a>
+
+        <a href="/search">
+            Search
+        </a>
+
+        {% if session.get("user_id") %}
+
+            <a href="/profile">
+                Profile
+            </a>
+
+            <a href="/logout">
+                Logout
+            </a>
+
+        {% else %}
+
+            <a href="/login">
+                Login
+            </a>
+
+        {% endif %}
+
+    </nav>
+
+</header>
+
+
+<section class="hero">
+
+    <div>
+
+        <h1>Give Blood, Save Life</h1>
+
+        <p>
+            Smart Blood Donor and Receiver System
+        </p>
+
+        <p>
+            Find suitable blood donors quickly and easily.
+        </p>
+
+        <div class="hero-buttons">
+
+            <a href="/donor-register" class="btn">
+                Become a Donor
+            </a>
+
+            <a href="/receiver-register"
+               class="btn dark-btn">
+                Need Blood
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="stats">
+
+    <div class="stat-box">
+
+        <h2>{{ donor_count }}</h2>
+
+        <p>Registered Donors</p>
+
+    </div>
+
+
+    <div class="stat-box">
+
+        <h2>{{ receiver_count }}</h2>
+
+        <p>Receivers</p>
+
+    </div>
+
+
+    <div class="stat-box">
+
+        <h2>{{ request_count }}</h2>
+
+        <p>Blood Requests</p>
+
+    </div>
+
+</section>
+
+
+<section class="content">
+
+    <h2>How It Works</h2>
+
+    <div class="cards">
+
+        <div class="card">
+
+            <div class="card-icon">
+                👤
+            </div>
+
+            <h3>Register</h3>
+
+            <p>
+                Donors and receivers register
+                their basic information.
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">
+                🔍
+            </div>
+
+            <h3>Find Blood</h3>
+
+            <p>
+                Search donors using blood group
+                and city.
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">
+                ❤️
+            </div>
+
+            <h3>Save Life</h3>
+
+            <p>
+                Connect people who need blood
+                with suitable donors.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+<br><br>
+ <h2 style="text-align:  center;font-size: 37px;"><u>About Us</u></h2>
+    <br>
+<!-- <hr style="margin-left:100px;color: #102b46;width: 30px;margin-right: 100px;"><br> -->
+<p style="padding-left: 100px;padding-right: 100px;">Smart Blood System is a simple and user-friendly platform that connects blood donors with people who need blood. Donors can register by providing their basic details and blood group, while receivers can search for suitable donors and submit blood requests. The platform helps users quickly find matching blood groups and makes the process of connecting donors and receivers easier. Use the Register option to create an account, Login to access your dashboard, and Search Donors to find available blood donors. Always verify donor and receiver details through the appropriate medical or hospital authority before arranging a donation.</p>
+<br><br>
+<footer>
+
+    <p>
+        Smart Blood Donor & Receiver System
+    </p>
+
+</footer>
+
+</body>
+</html>

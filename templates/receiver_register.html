@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Receiver Registration</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🩸 SmartBlood
+    </div>
+
+    <nav>
+
+        <a href="/">Home</a>
+
+        <a href="/donor-register">
+            Donate
+        </a>
+
+        <a href="/receiver-register">
+            Need Blood
+        </a>
+
+        <a href="/login">
+            Login
+        </a>
+
+    </nav>
+
+</header>
+
+
+<div class="form-container">
+
+    <h1>Receiver Registration</h1>
+
+    <p class="form-info">
+        Register to find required blood
+    </p>
+
+
+    {% if error %}
+
+    <div class="error">
+        {{ error }}
+    </div>
+
+    {% endif %}
+
+
+    <form method="POST">
+
+        <label>Patient Name</label>
+
+        <input
+            type="text"
+            name="name"
+            placeholder="Enter patient name"
+            required
+        >
+
+
+        <label>Email</label>
+
+        <input
+            type="email"
+            name="email"
+            placeholder="Enter email"
+            required
+        >
+
+
+        <label>Password</label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Create password"
+            required
+        >
+
+
+        <label>Blood Group Required</label>
+
+        <select name="blood_group" required>
+
+            <option value="">
+                Select Blood Group
+            </option>
+
+            <option>A+</option>
+            <option>A-</option>
+            <option>B+</option>
+            <option>B-</option>
+            <option>AB+</option>
+            <option>AB-</option>
+            <option>O+</option>
+            <option>O-</option>
+
+        </select>
+
+
+        <label>Hospital Name</label>
+
+        <input
+            type="text"
+            name="hospital"
+            placeholder="Enter hospital name"
+            required
+        >
+
+
+        <label>City</label>
+
+        <input
+            type="text"
+            name="city"
+            placeholder="Enter city"
+            required
+        >
+
+
+        <button type="submit">
+            Register as Receiver
+        </button>
+
+    </form>
+
+
+    <p class="bottom-text">
+
+        Already registered?
+
+        <!-- <a href="/login">
+            Login here
+        </a> -->
+
+    </p>
+
+</div>
+
+</body>
+</html>
