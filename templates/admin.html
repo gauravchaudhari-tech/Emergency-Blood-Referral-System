@@ -5,263 +5,788 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard | Blood Management System</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
+            color: #2c3e50;
+        }
+
+        /* ================= HEADER ================= */
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #8e0e00, #d63031);
+            color: white;
+            padding: 25px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .header-left h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header-left p {
+            margin: 6px 0 0;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            text-decoration: none;
+            color: white;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 10px 18px;
+            border-radius: 8px;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #c0392b;
+        }
+
+        /* ================= MAIN ================= */
+
+        .dashboard-container {
+            width: 94%;
+            max-width: 1450px;
+            margin: 30px auto;
+        }
+
+        /* ================= STAT CARDS ================= */
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.08);
+            border-left: 5px solid #d63031;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.13);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff0f0;
+            font-size: 28px;
+        }
+
+        .stat-info h2 {
+            margin: 0;
+            font-size: 30px;
+            color: #2c3e50;
+        }
+
+        .stat-info p {
+            margin: 5px 0 0;
+            color: #777;
+            font-size: 15px;
+        }
+
+        /* ================= SECTION ================= */
+
+        .admin-section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 18px rgba(0,0,0,0.07);
+            overflow-x: auto;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f1f1;
+            padding-bottom: 15px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 21px;
+            color: #2c3e50;
+        }
+
+        .section-badge {
+            background: #fff0f0;
+            color: #c0392b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* ================= TABLE ================= */
+
+        .admin-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 850px;
+            overflow: hidden;
+        }
+
+        .admin-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 13px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .admin-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .admin-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .admin-table td {
+            padding: 13px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .admin-table tbody tr {
+            transition: 0.2s;
+        }
+
+        .admin-table tbody tr:hover {
+            background: #fff8f8;
+        }
+
+        /* ================= BLOOD GROUP ================= */
+
+        .blood-group {
+            display: inline-block;
+            min-width: 48px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            background: #ffe5e5;
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        /* ================= STATUS ================= */
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-delivered {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        /* ================= BUTTONS ================= */
+
+        .action-btn {
+            display: inline-block;
+            padding: 7px 12px;
+            margin: 2px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: 0.25s;
+        }
+
+        .edit-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background: #217dbb;
+            transform: translateY(-1px);
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+        }
+
+        .deliver-btn {
+            background: #27ae60;
+            color: white;
+        }
+
+        .deliver-btn:hover {
+            background: #1e8449;
+            transform: translateY(-1px);
+        }
+
+        .disabled-btn {
+            background: #bdc3c7;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        /* ================= EMPTY ================= */
+
+        .empty-message {
+            text-align: center;
+            padding: 30px;
+            color: #888;
+        }
+
+        /* ================= RESPONSIVE ================= */
+
+        @media (max-width: 850px) {
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .dashboard-container {
+                width: 96%;
+            }
+
+            .admin-section {
+                padding: 18px;
+            }
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
-<header>
 
-    <div class="logo">
-        🩸 SmartBlood
+<!-- ================= HEADER ================= -->
+
+<header class="dashboard-header">
+
+    <div class="header-left">
+
+        <h1>🩸 Blood Management System</h1>
+
+        <p>Admin Dashboard • Manage your blood donation system</p>
+
     </div>
 
-    <nav>
-
-        <a href="/">
-            Home
-        </a>
-
-        <a href="/admin">
-            Admin
-        </a>
-
-        <a href="/logout">
-            Logout
-        </a>
-
-    </nav>
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        Logout
+    </a>
 
 </header>
 
 
-<div class="admin-container">
+<!-- ================= MAIN ================= -->
 
-    <h1>Admin Dashboard</h1>
-
-
-    <div class="stats">
-
-        <div class="stat-box">
-
-            <h2>
-                {{ donors|length }}
-            </h2>
-
-            <p>
-                Total Donors
-            </p>
-
-        </div>
+<div class="dashboard-container">
 
 
-        <div class="stat-box">
+    <!-- ================= STATISTICS ================= -->
 
-            <h2>
-                {{ receivers|length }}
-            </h2>
+    <div class="stats-container">
 
-            <p>
-                Total Receivers
-            </p>
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                🩸
+            </div>
+
+            <div class="stat-info">
+
+                <h2>{{ donor_count }}</h2>
+
+                <p>Total Donors</p>
+
+            </div>
 
         </div>
 
 
-        <div class="stat-box">
+        <div class="stat-card">
 
-            <h2>
-                {{ requests|length }}
-            </h2>
+            <div class="stat-icon">
+                👥
+            </div>
 
-            <p>
-                Blood Requests
-            </p>
+            <div class="stat-info">
+
+                <h2>{{ receiver_count }}</h2>
+
+                <p>Total Receivers</p>
+
+            </div>
 
         </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                📋
+            </div>
+
+            <div class="stat-info">
+
+                <h2>{{ request_count }}</h2>
+
+                <p>Blood Requests</p>
+
+            </div>
+
+        </div>
+
 
     </div>
 
 
-    <h2 class="section-title">
-        Registered Donors
-    </h2>
+    <!-- ================= DONORS ================= -->
+
+    <div class="admin-section">
+
+        <div class="section-header">
+
+            <h2>🩸 Donor Management</h2>
+
+            <span class="section-badge">
+                {{ donor_count }} Donors
+            </span>
+
+        </div>
 
 
-    <div class="table-container">
+        {% if donors %}
 
-        <table>
+        <table class="admin-table">
 
-            <tr>
+            <thead>
 
-                <th>ID</th>
-                <th>Name</th>
-                <th>Blood Group</th>
-                <th>Phone</th>
-                <th>City</th>
+                <tr>
 
-            </tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Blood Group</th>
+                    <th>Phone</th>
+                    <th>City</th>
+                    <th>Last Donation</th>
+                    <th>Actions</th>
 
+                </tr>
+
+            </thead>
+
+
+            <tbody>
 
             {% for donor in donors %}
 
-            <tr>
+                <tr>
 
-                <td>
-                    {{ donor["id"] }}
-                </td>
+                    <td>{{ donor["id"] }}</td>
 
-                <td>
-                    {{ donor["name"] }}
-                </td>
+                    <td>
+                        <strong>{{ donor["name"] }}</strong>
+                    </td>
 
-                <td>
-                    <strong>
-                        {{ donor["blood_group"] }}
-                    </strong>
-                </td>
+                    <td>
+                        <span class="blood-group">
+                            {{ donor["blood_group"] }}
+                        </span>
+                    </td>
 
-                <td>
-                    {{ donor["phone"] }}
-                </td>
+                    <td>{{ donor["phone"] }}</td>
 
-                <td>
-                    {{ donor["city"] }}
-                </td>
+                    <td>{{ donor["city"] }}</td>
 
-            </tr>
+                    <td>
+
+                        {% if donor["last_donation_date"] %}
+
+                            {{ donor["last_donation_date"] }}
+
+                        {% else %}
+
+                            <span style="color:#999;">
+                                Not Available
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        <a
+                            href="{{ url_for('edit_donor', donor_id=donor['id']) }}"
+                            class="action-btn edit-btn"
+                        >
+                            ✏ Edit
+                        </a>
+
+
+                        <form
+                            action="{{ url_for('delete_donor', donor_id=donor['id']) }}"
+                            method="POST"
+                            style="display:inline;"
+                            onsubmit="return confirm('Are you sure you want to delete this donor?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="action-btn delete-btn"
+                            >
+                                🗑 Delete
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
 
             {% endfor %}
 
+            </tbody>
+
         </table>
+
+
+        {% else %}
+
+            <div class="empty-message">
+                No donors found.
+            </div>
+
+        {% endif %}
 
     </div>
 
 
-    <h2 class="section-title">
-        Registered Receivers
-    </h2>
+    <!-- ================= RECEIVERS ================= -->
+
+    <div class="admin-section">
+
+        <div class="section-header">
+
+            <h2>👥 Receiver Management</h2>
+
+            <span class="section-badge">
+                {{ receiver_count }} Receivers
+            </span>
+
+        </div>
 
 
-    <div class="table-container">
+        {% if receivers %}
 
-        <table>
+        <table class="admin-table">
 
-            <tr>
+            <thead>
 
-                <th>ID</th>
-                <th>Name</th>
-                <th>Blood Group</th>
-                <th>Hospital</th>
-                <th>City</th>
+                <tr>
 
-            </tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Blood Group</th>
+                    <th>Hospital</th>
+                    <th>City</th>
+                    <th>Actions</th>
 
+                </tr>
+
+            </thead>
+
+
+            <tbody>
 
             {% for receiver in receivers %}
 
-            <tr>
+                <tr>
 
-                <td>
-                    {{ receiver["id"] }}
-                </td>
+                    <td>{{ receiver["id"] }}</td>
 
-                <td>
-                    {{ receiver["name"] }}
-                </td>
+                    <td>
+                        <strong>{{ receiver["name"] }}</strong>
+                    </td>
 
-                <td>
-                    <strong>
-                        {{ receiver["blood_group"] }}
-                    </strong>
-                </td>
+                    <td>
 
-                <td>
-                    {{ receiver["hospital"] }}
-                </td>
+                        <span class="blood-group">
+                            {{ receiver["blood_group"] }}
+                        </span>
 
-                <td>
-                    {{ receiver["city"] }}
-                </td>
+                    </td>
 
-            </tr>
+                    <td>{{ receiver["hospital"] }}</td>
+
+                    <td>{{ receiver["city"] }}</td>
+
+
+                    <td>
+
+                        <a
+                            href="{{ url_for('edit_receiver', receiver_id=receiver['id']) }}"
+                            class="action-btn edit-btn"
+                        >
+                            ✏ Edit
+                        </a>
+
+
+                        <form
+                            action="{{ url_for('delete_receiver', receiver_id=receiver['id']) }}"
+                            method="POST"
+                            style="display:inline;"
+                            onsubmit="return confirm('Deleting this receiver will also delete related blood requests. Continue?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="action-btn delete-btn"
+                            >
+                                🗑 Delete
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
 
             {% endfor %}
 
+            </tbody>
+
         </table>
+
+
+        {% else %}
+
+            <div class="empty-message">
+                No receivers found.
+            </div>
+
+        {% endif %}
 
     </div>
 
 
-    <h2 class="section-title">
-        Blood Requests
-    </h2>
+    <!-- ================= BLOOD REQUESTS ================= -->
+
+    <div class="admin-section">
+
+        <div class="section-header">
+
+            <h2>📋 Blood Request Management</h2>
+
+            <span class="section-badge">
+                {{ request_count }} Requests
+            </span>
+
+        </div>
 
 
-    <div class="table-container">
+        {% if blood_requests %}
 
-        <table>
+        <table class="admin-table">
 
-            <tr>
+            <thead>
 
-                <th>ID</th>
-                <th>Patient</th>
-                <th>Blood Group</th>
-                <th>Hospital</th>
-                <th>City</th>
-                <th>Status</th>
+                <tr>
 
-            </tr>
+                    <th>ID</th>
+                    <th>Patient Name</th>
+                    <th>Blood Group</th>
+                    <th>Hospital</th>
+                    <th>City</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+
+                </tr>
+
+            </thead>
 
 
-            {% for req in requests %}
+            <tbody>
 
-            <tr>
+            {% for request in blood_requests %}
 
-                <td>
-                    {{ req["id"] }}
-                </td>
+                <tr>
 
-                <td>
-                    {{ req["patient_name"] }}
-                </td>
+                    <td>{{ request["id"] }}</td>
 
-                <td>
-                    <strong>
-                        {{ req["blood_group"] }}
-                    </strong>
-                </td>
+                    <td>
+                        <strong>{{ request["patient_name"] }}</strong>
+                    </td>
 
-                <td>
-                    {{ req["hospital"] }}
-                </td>
+                    <td>
 
-                <td>
-                    {{ req["city"] }}
-                </td>
+                        <span class="blood-group">
+                            {{ request["blood_group"] }}
+                        </span>
 
-                <td>
-                    <span class="status">
-                        {{ req["status"] }}
-                    </span>
-                </td>
+                    </td>
 
-            </tr>
+                    <td>{{ request["hospital"] }}</td>
+
+                    <td>{{ request["city"] }}</td>
+
+
+                    <td>
+
+                        {% if request["status"] == "Successfully Delivered" %}
+
+                            <span class="status status-delivered">
+                                ✓ Successfully Delivered
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-pending">
+                                ⏳ {{ request["status"] }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+
+                        {% if request["status"] != "Successfully Delivered" %}
+
+                        <form
+                            action="{{ url_for('deliver_request', request_id=request['id']) }}"
+                            method="POST"
+                            style="display:inline;"
+                            onsubmit="return confirm('Mark this request as Successfully Delivered?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="action-btn deliver-btn"
+                            >
+                                ✓ Delivered
+                            </button>
+
+                        </form>
+
+                        {% else %}
+
+                            <button
+                                class="action-btn disabled-btn"
+                                disabled
+                            >
+                                ✓ Delivered
+                            </button>
+
+                        {% endif %}
+
+
+                        <form
+                            action="{{ url_for('delete_request', request_id=request['id']) }}"
+                            method="POST"
+                            style="display:inline;"
+                            onsubmit="return confirm('Are you sure you want to delete this blood request?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="action-btn delete-btn"
+                            >
+                                🗑 Delete
+                            </button>
+
+                        </form>
+
+
+                    </td>
+
+                </tr>
 
             {% endfor %}
 
+            </tbody>
+
         </table>
 
+
+        {% else %}
+
+            <div class="empty-message">
+                No blood requests found.
+            </div>
+
+        {% endif %}
+
     </div>
+
 
 </div>
 
+
 </body>
+
 </html>

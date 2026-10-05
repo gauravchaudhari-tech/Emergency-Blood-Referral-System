@@ -1,12 +1,55 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
+import re
+import os
+import calendar
+from datetime import date, datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 app = Flask(__name__)
-
-# Secret key for session
-app.secret_key = "smart_blood_secret_key"
+app.secret_key = "smart_blood_system_secret_key"
 
 DATABASE = "database.db"
+
+
+# =========================================================
+# BLOOD GROUP COMPATIBILITY
+# =========================================================
+
+VALID_BLOOD_GROUPS = [
+    "A+", "A-",
+    "B+", "B-",
+    "AB+", "AB-",
+    "O+", "O-"
+]
+
+BLOOD_COMPATIBILITY = {
+    "A+": ["A+", "O+"],
+    "A-": ["A-", "O-"],
+
+    "B+": ["B+", "O+"],
+    "B-": ["B-", "O-"],
+
+    "AB+": [
+        "A+", "A-",
+        "B+", "B-",
+        "AB+", "AB-",
+        "O+", "O-"
+    ],
+
+    "AB-": [
+        "A-", "B-",
+        "AB-", "O-"
+    ],
+
+    "O+": ["O+", "O-"],
+    "O-": ["O-"]
+}
 
 
 # =========================================================
@@ -20,15 +63,16 @@ def get_db():
 
 
 # =========================================================
-# CREATE DATABASE
+# DATABASE CREATION
 # =========================================================
 
 def create_database():
 
     conn = get_db()
+    cursor = conn.cursor()
 
-    # ---------------- USERS TABLE ----------------
-    conn.execute("""
+    # USERS
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -38,20 +82,21 @@ def create_database():
         )
     """)
 
-    # ---------------- DONORS TABLE ----------------
-    conn.execute("""
+    # DONORS
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS donors (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
             name TEXT NOT NULL,
             blood_group TEXT NOT NULL,
             phone TEXT NOT NULL,
-            city TEXT NOT NULL
+            city TEXT NOT NULL,
+            last_donation_date TEXT
         )
     """)
 
-    # ---------------- RECEIVERS TABLE ----------------
-    conn.execute("""
+    # RECEIVERS
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS receivers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
@@ -62,8 +107,8 @@ def create_database():
         )
     """)
 
-    # ---------------- BLOOD REQUESTS TABLE ----------------
-    conn.execute("""
+    # BLOOD REQUESTS
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS blood_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             receiver_id INTEGER,
@@ -75,37 +120,170 @@ def create_database():
         )
     """)
 
-    conn.commit()
+    # -----------------------------------------------------
+    # Add last_donation_date to old donor table if missing
+    # -----------------------------------------------------
 
-    # =====================================================
-    # DEFAULT ADMIN ACCOUNT
-    # =====================================================
+    cursor.execute("PRAGMA table_info(donors)")
+    donor_columns = [row["name"] for row in cursor.fetchall()]
 
-    admin = conn.execute(
-        "SELECT * FROM users WHERE email = ?",
-        ("admin@gmail.com",)
-    ).fetchone()
+    if "last_donation_date" not in donor_columns:
+        cursor.execute("""
+            ALTER TABLE donors
+            ADD COLUMN last_donation_date TEXT
+        """)
 
-    if admin is None:
+    # -----------------------------------------------------
+    # Add status to old blood_requests table if missing
+    # -----------------------------------------------------
 
-        conn.execute("""
+    cursor.execute("PRAGMA table_info(blood_requests)")
+    request_columns = [row["name"] for row in cursor.fetchall()]
+
+    if "status" not in request_columns:
+        cursor.execute("""
+            ALTER TABLE blood_requests
+            ADD COLUMN status TEXT DEFAULT 'Pending'
+        """)
+
+    # -----------------------------------------------------
+    # Create default admin
+    # -----------------------------------------------------
+
+    cursor.execute("""
+        SELECT * FROM users
+        WHERE email = ?
+    """, (ADMIN_EMAIL,))
+
+    admin = cursor.fetchone()
+
+    if not admin:
+        cursor.execute("""
             INSERT INTO users
             (name, email, password, role)
             VALUES (?, ?, ?, ?)
         """, (
             "Admin",
-            "admin@gmail.com",
-            "admin123",
+            "ADMIN_EMAIL",
+            "ADMIN_PASSWORD",
             "admin"
         ))
 
-        conn.commit()
-
+    conn.commit()
     conn.close()
 
 
 # =========================================================
-# HOME PAGE
+# VALIDATION FUNCTIONS
+# =========================================================
+
+def valid_name_or_city(value):
+
+    if not value:
+        return False
+
+    value = value.strip()
+
+    if not value:
+        return False
+
+    # Characters and spaces only
+    return all(
+        char.isalpha() or char.isspace()
+        for char in value
+    )
+
+
+def valid_phone(phone):
+
+    if not phone:
+        return False
+
+    return bool(
+        re.fullmatch(r"[0-9]{10}", phone.strip())
+    )
+
+
+def valid_blood_group(blood_group):
+
+    return blood_group in VALID_BLOOD_GROUPS
+
+
+# =========================================================
+# DATE FUNCTIONS
+# =========================================================
+
+def add_months(original_date, months):
+
+    month = original_date.month - 1 + months
+
+    year = original_date.year + month // 12
+
+    month = month % 12 + 1
+
+    day = min(
+        original_date.day,
+        calendar.monthrange(year, month)[1]
+    )
+
+    return original_date.replace(
+        year=year,
+        month=month,
+        day=day
+    )
+
+
+def donation_is_eligible(last_donation_date):
+
+    if not last_donation_date:
+        return False
+
+    try:
+        donation_date = datetime.strptime(
+            last_donation_date,
+            "%Y-%m-%d"
+        ).date()
+    except ValueError:
+        return False
+
+    today = date.today()
+
+    # Future date is invalid
+    if donation_date > today:
+        return False
+
+    eligible_date = add_months(
+        donation_date,
+        3
+    )
+
+    return today >= eligible_date
+
+
+# =========================================================
+# CURRENT USER
+# =========================================================
+
+def get_current_user():
+
+    if "user_id" not in session:
+        return None
+
+    conn = get_db()
+
+    user = conn.execute("""
+        SELECT *
+        FROM users
+        WHERE id = ?
+    """, (session["user_id"],)).fetchone()
+
+    conn.close()
+
+    return user
+
+
+# =========================================================
+# HOME
 # =========================================================
 
 @app.route("/")
@@ -114,16 +292,16 @@ def index():
     conn = get_db()
 
     donor_count = conn.execute(
-        "SELECT COUNT(*) AS count FROM donors"
-    ).fetchone()["count"]
+        "SELECT COUNT(*) FROM donors"
+    ).fetchone()[0]
 
     receiver_count = conn.execute(
-        "SELECT COUNT(*) AS count FROM receivers"
-    ).fetchone()["count"]
+        "SELECT COUNT(*) FROM receivers"
+    ).fetchone()[0]
 
     request_count = conn.execute(
-        "SELECT COUNT(*) AS count FROM blood_requests"
-    ).fetchone()["count"]
+        "SELECT COUNT(*) FROM blood_requests"
+    ).fetchone()[0]
 
     conn.close()
 
@@ -136,6 +314,244 @@ def index():
 
 
 # =========================================================
+# DONOR REGISTRATION
+# =========================================================
+
+@app.route("/donor-register", methods=["GET", "POST"])
+def donor_register():
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        blood_group = request.form.get("blood_group", "").strip()
+        phone = request.form.get("phone", "").strip()
+        city = request.form.get("city", "").strip()
+        last_donation_date = request.form.get(
+            "last_donation_date",
+            ""
+        ).strip()
+
+        # Validation
+        if not valid_name_or_city(name):
+            return render_template(
+                "donor_register.html",
+                error="Name must contain characters and spaces only."
+            )
+
+        if not valid_blood_group(blood_group):
+            return render_template(
+                "donor_register.html",
+                error="Please select a valid blood group."
+            )
+
+        if not valid_phone(phone):
+            return render_template(
+                "donor_register.html",
+                error="Phone number must contain exactly 10 digits."
+            )
+
+        if not valid_name_or_city(city):
+            return render_template(
+                "donor_register.html",
+                error="City must contain characters and spaces only."
+            )
+
+        if not last_donation_date:
+            return render_template(
+                "donor_register.html",
+                error="Please enter your last blood donation date."
+            )
+
+        try:
+            donation_date = datetime.strptime(
+                last_donation_date,
+                "%Y-%m-%d"
+            ).date()
+
+            if donation_date > date.today():
+                return render_template(
+                    "donor_register.html",
+                    error="Last donation date cannot be in the future."
+                )
+
+        except ValueError:
+            return render_template(
+                "donor_register.html",
+                error="Invalid donation date."
+            )
+
+        conn = get_db()
+
+        # Check email
+        existing_user = conn.execute("""
+            SELECT *
+            FROM users
+            WHERE email = ?
+        """, (email,)).fetchone()
+
+        if existing_user:
+            conn.close()
+
+            return render_template(
+                "donor_register.html",
+                error="Email already registered."
+            )
+
+        # Create user
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO users
+            (name, email, password, role)
+            VALUES (?, ?, ?, ?)
+        """, (
+            name,
+            email,
+            password,
+            "donor"
+        ))
+
+        user_id = cursor.lastrowid
+
+        # Create donor
+        cursor.execute("""
+            INSERT INTO donors
+            (
+                user_id,
+                name,
+                blood_group,
+                phone,
+                city,
+                last_donation_date
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            name,
+            blood_group,
+            phone,
+            city,
+            last_donation_date
+        ))
+
+        conn.commit()
+        conn.close()
+
+        session["user_id"] = user_id
+        session["role"] = "donor"
+
+        return redirect("/donor-dashboard")
+
+    return render_template(
+        "donor_register.html"
+    )
+
+
+# =========================================================
+# RECEIVER REGISTRATION
+# =========================================================
+
+@app.route("/receiver-register", methods=["GET", "POST"])
+def receiver_register():
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        blood_group = request.form.get("blood_group", "").strip()
+        hospital = request.form.get("hospital", "").strip()
+        city = request.form.get("city", "").strip()
+
+        if not valid_name_or_city(name):
+            return render_template(
+                "receiver_register.html",
+                error="Name must contain characters and spaces only."
+            )
+
+        if not valid_blood_group(blood_group):
+            return render_template(
+                "receiver_register.html",
+                error="Please select a valid blood group."
+            )
+
+        if not hospital:
+            return render_template(
+                "receiver_register.html",
+                error="Please enter hospital name."
+            )
+
+        if not valid_name_or_city(city):
+            return render_template(
+                "receiver_register.html",
+                error="City must contain characters and spaces only."
+            )
+
+        conn = get_db()
+
+        existing_user = conn.execute("""
+            SELECT *
+            FROM users
+            WHERE email = ?
+        """, (email,)).fetchone()
+
+        if existing_user:
+            conn.close()
+
+            return render_template(
+                "receiver_register.html",
+                error="Email already registered."
+            )
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO users
+            (name, email, password, role)
+            VALUES (?, ?, ?, ?)
+        """, (
+            name,
+            email,
+            password,
+            "receiver"
+        ))
+
+        user_id = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO receivers
+            (
+                user_id,
+                name,
+                blood_group,
+                hospital,
+                city
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            name,
+            blood_group,
+            hospital,
+            city
+        ))
+
+        conn.commit()
+        conn.close()
+
+        session["user_id"] = user_id
+        session["role"] = "receiver"
+
+        return redirect("/receiver-dashboard")
+
+    return render_template(
+        "receiver_register.html"
+    )
+
+
+# =========================================================
 # LOGIN
 # =========================================================
 
@@ -144,42 +560,40 @@ def login():
 
     if request.method == "POST":
 
-        email = request.form["email"].strip()
-        password = request.form["password"]
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
 
         conn = get_db()
 
         user = conn.execute("""
             SELECT *
             FROM users
-            WHERE email = ? AND password = ?
-        """, (email, password)).fetchone()
+            WHERE email = ?
+            AND password = ?
+        """, (
+            email,
+            password
+        )).fetchone()
 
         conn.close()
 
-        if user:
+        if not user:
+            return render_template(
+                "login.html",
+                error="Invalid email or password."
+            )
 
-            # Store login information
-            session["user_id"] = user["id"]
-            session["name"] = user["name"]
-            session["role"] = user["role"]
+        session["user_id"] = user["id"]
+        session["role"] = user["role"]
 
-            # ---------------- DONOR ----------------
-            if user["role"] == "donor":
-                return redirect(url_for("donor_dashboard"))
+        if user["role"] == "admin":
+            return redirect("/admin")
 
-            # ---------------- RECEIVER ----------------
-            elif user["role"] == "receiver":
-                return redirect(url_for("receiver_dashboard"))
+        if user["role"] == "donor":
+            return redirect("/donor-dashboard")
 
-            # ---------------- ADMIN ----------------
-            elif user["role"] == "admin":
-                return redirect(url_for("admin"))
-
-        return render_template(
-            "login.html",
-            error="Invalid email or password"
-        )
+        if user["role"] == "receiver":
+            return redirect("/receiver-dashboard")
 
     return render_template("login.html")
 
@@ -193,165 +607,7 @@ def logout():
 
     session.clear()
 
-    return redirect(url_for("index"))
-
-
-# =========================================================
-# DONOR REGISTRATION
-# =========================================================
-
-@app.route("/donor-register", methods=["GET", "POST"])
-def donor_register():
-
-    if request.method == "POST":
-
-        name = request.form["name"].strip()
-        email = request.form["email"].strip()
-        password = request.form["password"]
-        blood_group = request.form["blood_group"].strip()
-        phone = request.form["phone"].strip()
-        city = request.form["city"].strip()
-
-        conn = get_db()
-
-        try:
-
-            # Create user
-            cursor = conn.execute("""
-                INSERT INTO users
-                (name, email, password, role)
-                VALUES (?, ?, ?, ?)
-            """, (
-                name,
-                email,
-                password,
-                "donor"
-            ))
-
-            user_id = cursor.lastrowid
-
-            # Create donor
-            conn.execute("""
-                INSERT INTO donors
-                (user_id, name, blood_group, phone, city)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                user_id,
-                name,
-                blood_group,
-                phone,
-                city
-            ))
-
-            conn.commit()
-
-        except sqlite3.IntegrityError:
-
-            conn.close()
-
-            return render_template(
-                "donor_register.html",
-                error="Email already registered."
-            )
-
-        conn.close()
-
-        # =================================================
-        # DIRECT DONOR LOGIN AFTER REGISTRATION
-        # =================================================
-
-        session["user_id"] = user_id
-        session["name"] = name
-        session["role"] = "donor"
-
-        return redirect(url_for("donor_dashboard"))
-
-    return render_template("donor_register.html")
-
-
-# =========================================================
-# RECEIVER REGISTRATION
-# =========================================================
-
-@app.route("/receiver-register", methods=["GET", "POST"])
-def receiver_register():
-
-    if request.method == "POST":
-
-        name = request.form["name"].strip()
-        email = request.form["email"].strip()
-        password = request.form["password"]
-        blood_group = request.form["blood_group"].strip()
-        hospital = request.form["hospital"].strip()
-        city = request.form["city"].strip()
-
-        conn = get_db()
-
-        try:
-
-            # =================================================
-            # SAVE RECEIVER IN USERS TABLE
-            # =================================================
-
-            cursor = conn.execute("""
-                INSERT INTO users
-                (name, email, password, role)
-                VALUES (?, ?, ?, ?)
-            """, (
-                name,
-                email,
-                password,
-                "receiver"
-            ))
-
-            user_id = cursor.lastrowid
-
-            # =================================================
-            # SAVE RECEIVER IN RECEIVERS TABLE
-            # =================================================
-
-            conn.execute("""
-                INSERT INTO receivers
-                (user_id, name, blood_group, hospital, city)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                user_id,
-                name,
-                blood_group,
-                hospital,
-                city
-            ))
-
-            conn.commit()
-
-        except sqlite3.IntegrityError:
-
-            conn.close()
-
-            return render_template(
-                "receiver_register.html",
-                error="Email already registered."
-            )
-
-        # =====================================================
-        # IMPORTANT:
-        # Receiver is automatically logged in
-        # =====================================================
-
-        session["user_id"] = user_id
-        session["name"] = name
-        session["role"] = "receiver"
-
-        conn.close()
-
-        # =====================================================
-        # DIRECTLY OPEN RECEIVER DASHBOARD
-        # Matching donors will be displayed there
-        # =====================================================
-
-        return redirect(url_for("receiver_dashboard"))
-
-    return render_template("receiver_register.html")
+    return redirect("/")
 
 
 # =========================================================
@@ -361,9 +617,10 @@ def receiver_register():
 @app.route("/donor-dashboard")
 def donor_dashboard():
 
-    # Only donor can access this page
-    if session.get("role") != "donor":
-        return redirect(url_for("login"))
+    user = get_current_user()
+
+    if not user or user["role"] != "donor":
+        return redirect("/login")
 
     conn = get_db()
 
@@ -371,14 +628,9 @@ def donor_dashboard():
         SELECT *
         FROM donors
         WHERE user_id = ?
-    """, (session["user_id"],)).fetchone()
+    """, (user["id"],)).fetchone()
 
     conn.close()
-
-    # If donor record does not exist
-    if donor is None:
-        session.clear()
-        return redirect(url_for("login"))
 
     return render_template(
         "donor_dashboard.html",
@@ -393,105 +645,87 @@ def donor_dashboard():
 @app.route("/receiver-dashboard")
 def receiver_dashboard():
 
-    # Only receiver can access this page
-    if session.get("role") != "receiver":
-        return redirect(url_for("login"))
+    user = get_current_user()
+
+    if not user or user["role"] != "receiver":
+        return redirect("/login")
 
     conn = get_db()
-
-    # =====================================================
-    # GET CURRENT RECEIVER
-    # =====================================================
 
     receiver = conn.execute("""
         SELECT *
         FROM receivers
         WHERE user_id = ?
-    """, (session["user_id"],)).fetchone()
+    """, (user["id"],)).fetchone()
 
-    # If receiver record doesn't exist
-    if receiver is None:
-
+    if not receiver:
         conn.close()
-        session.clear()
+        return redirect("/logout")
 
-        return redirect(url_for("login"))
+    compatible_groups = BLOOD_COMPATIBILITY.get(
+        receiver["blood_group"],
+        []
+    )
 
-    # =====================================================
-    # GET RECEIVER'S BLOOD REQUESTS
-    # =====================================================
+    placeholders = ",".join(
+        ["?"] * len(compatible_groups)
+    )
+
+    donors = conn.execute(f"""
+        SELECT *
+        FROM donors
+        WHERE blood_group IN ({placeholders})
+        ORDER BY
+            CASE
+                WHEN city = ? THEN 0
+                ELSE 1
+            END,
+            id DESC
+    """, (
+        *compatible_groups,
+        receiver["city"]
+    )).fetchall()
 
     requests = conn.execute("""
         SELECT *
         FROM blood_requests
         WHERE receiver_id = ?
         ORDER BY id DESC
-    """, (receiver["id"],)).fetchall()
-
-    # =====================================================
-    # MATCHING DONORS
-    #
-    # 1. Same blood group
-    # 2. Same city first
-    # 3. Other cities next
-    # =====================================================
-
-    donors = conn.execute("""
-        SELECT *
-        FROM donors
-
-        WHERE LOWER(TRIM(blood_group))
-              = LOWER(TRIM(?))
-
-        ORDER BY
-            CASE
-                WHEN LOWER(TRIM(city))
-                     = LOWER(TRIM(?))
-                THEN 0
-                ELSE 1
-            END,
-
-            LOWER(TRIM(city)) ASC,
-            name ASC
     """, (
-        receiver["blood_group"],
-        receiver["city"]
+        receiver["id"],
     )).fetchall()
-
-    # =====================================================
-    # SEPARATE SAME CITY AND OTHER CITY DONORS
-    # =====================================================
-
-    same_city_donors = []
-    other_city_donors = []
-
-    receiver_city = receiver["city"].strip().lower()
-
-    for donor in donors:
-
-        donor_city = donor["city"].strip().lower()
-
-        if donor_city == receiver_city:
-
-            same_city_donors.append(donor)
-
-        else:
-
-            other_city_donors.append(donor)
 
     conn.close()
 
-    # =====================================================
-    # SEND DATA TO RECEIVER DASHBOARD
-    # =====================================================
+    eligible_donors = [
+        donor
+        for donor in donors
+        if donation_is_eligible(
+            donor["last_donation_date"]
+        )
+    ]
+
+    same_city_donors = [
+        donor
+        for donor in eligible_donors
+        if donor["city"].lower()
+        == receiver["city"].lower()
+    ]
+
+    other_city_donors = [
+        donor
+        for donor in eligible_donors
+        if donor["city"].lower()
+        != receiver["city"].lower()
+    ]
 
     return render_template(
         "receiver_dashboard.html",
         receiver=receiver,
-        requests=requests,
-        donors=donors,
+        compatible_groups=compatible_groups,
         same_city_donors=same_city_donors,
-        other_city_donors=other_city_donors
+        other_city_donors=other_city_donors,
+        requests=requests
     )
 
 
@@ -502,14 +736,42 @@ def receiver_dashboard():
 @app.route("/create-request", methods=["POST"])
 def create_request():
 
-    # Only receiver can create request
-    if session.get("role") != "receiver":
-        return redirect(url_for("login"))
+    user = get_current_user()
 
-    patient_name = request.form["patient_name"].strip()
-    blood_group = request.form["blood_group"].strip()
-    hospital = request.form["hospital"].strip()
-    city = request.form["city"].strip()
+    if not user or user["role"] != "receiver":
+        return redirect("/login")
+
+    patient_name = request.form.get(
+        "patient_name",
+        ""
+    ).strip()
+
+    blood_group = request.form.get(
+        "blood_group",
+        ""
+    ).strip()
+
+    hospital = request.form.get(
+        "hospital",
+        ""
+    ).strip()
+
+    city = request.form.get(
+        "city",
+        ""
+    ).strip()
+
+    if not valid_name_or_city(patient_name):
+        return redirect("/receiver-dashboard")
+
+    if not valid_blood_group(blood_group):
+        return redirect("/receiver-dashboard")
+
+    if not hospital:
+        return redirect("/receiver-dashboard")
+
+    if not valid_name_or_city(city):
+        return redirect("/receiver-dashboard")
 
     conn = get_db()
 
@@ -517,39 +779,37 @@ def create_request():
         SELECT *
         FROM receivers
         WHERE user_id = ?
-    """, (session["user_id"],)).fetchone()
-
-    if receiver is None:
-
-        conn.close()
-
-        session.clear()
-
-        return redirect(url_for("login"))
-
-    conn.execute("""
-        INSERT INTO blood_requests
-        (receiver_id, patient_name, blood_group, hospital, city)
-        VALUES (?, ?, ?, ?, ?)
     """, (
-        receiver["id"],
-        patient_name,
-        blood_group,
-        hospital,
-        city
-    ))
+        user["id"],
+    )).fetchone()
 
-    conn.commit()
+    if receiver:
+
+        conn.execute("""
+            INSERT INTO blood_requests
+            (
+                receiver_id,
+                patient_name,
+                blood_group,
+                hospital,
+                city,
+                status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            receiver["id"],
+            patient_name,
+            blood_group,
+            hospital,
+            city,
+            "Pending"
+        ))
+
+        conn.commit()
+
     conn.close()
 
-    # After request creation go to search
-    return redirect(
-        url_for(
-            "search",
-            blood_group=blood_group,
-            city=city
-        )
-    )
+    return redirect("/receiver-dashboard")
 
 
 # =========================================================
@@ -560,156 +820,78 @@ def create_request():
 def search():
 
     blood_group = request.args.get(
-        "blood_group", ""
+        "blood_group",
+        ""
     ).strip()
 
     city = request.args.get(
-        "city", ""
+        "city",
+        ""
     ).strip()
 
-    conn = get_db()
-
     donors = []
+    compatible_groups = []
 
-    if blood_group:
+    if blood_group in VALID_BLOOD_GROUPS:
 
-        if city:
+        compatible_groups = BLOOD_COMPATIBILITY.get(
+            blood_group,
+            []
+        )
 
-            # Same blood group
-            # Same city first
-            # Other cities next
+        conn = get_db()
 
-            donors = conn.execute("""
-                SELECT *
-                FROM donors
+        placeholders = ",".join(
+            ["?"] * len(compatible_groups)
+        )
 
-                WHERE LOWER(TRIM(blood_group))
-                      = LOWER(TRIM(?))
+        donors = conn.execute(f"""
+            SELECT *
+            FROM donors
+            WHERE blood_group IN ({placeholders})
+            ORDER BY
+                CASE
+                    WHEN city = ? THEN 0
+                    ELSE 1
+                END,
+                id DESC
+        """, (
+            *compatible_groups,
+            city
+        )).fetchall()
 
-                ORDER BY
-                    CASE
-                        WHEN LOWER(TRIM(city))
-                             = LOWER(TRIM(?))
-                        THEN 0
-                        ELSE 1
-                    END,
+        conn.close()
 
-                    LOWER(TRIM(city)) ASC,
-                    name ASC
-            """, (
-                blood_group,
-                city
-            )).fetchall()
+        donors = [
+            donor
+            for donor in donors
+            if donation_is_eligible(
+                donor["last_donation_date"]
+            )
+        ]
 
-        else:
+    same_city_donors = [
+        donor
+        for donor in donors
+        if city and
+        donor["city"].lower() == city.lower()
+    ]
 
-            donors = conn.execute("""
-                SELECT *
-                FROM donors
-
-                WHERE LOWER(TRIM(blood_group))
-                      = LOWER(TRIM(?))
-
-                ORDER BY
-                    LOWER(TRIM(city)) ASC,
-                    name ASC
-            """, (
-                blood_group
-            )).fetchall()
-
-    conn.close()
+    other_city_donors = [
+        donor
+        for donor in donors
+        if not city or
+        donor["city"].lower() != city.lower()
+    ]
 
     return render_template(
         "search.html",
         donors=donors,
+        same_city_donors=same_city_donors,
+        other_city_donors=other_city_donors,
         blood_group=blood_group,
-        city=city
-    )
-
-
-# =========================================================
-# ALL BLOOD REQUESTS
-# =========================================================
-
-@app.route("/requests")
-def requests():
-
-    if "user_id" not in session:
-
-        return redirect(url_for("login"))
-
-    conn = get_db()
-
-    all_requests = conn.execute("""
-        SELECT *
-        FROM blood_requests
-        ORDER BY id DESC
-    """).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "requests.html",
-        requests=all_requests
-    )
-
-
-# =========================================================
-# ADMIN DASHBOARD
-# =========================================================
-
-@app.route("/admin")
-def admin():
-
-    # =====================================================
-    # VERY IMPORTANT ADMIN SECURITY
-    #
-    # Only user with role = admin can enter
-    # =====================================================
-
-    if session.get("role") != "admin":
-
-        return redirect(url_for("login"))
-
-    conn = get_db()
-
-    # =====================================================
-    # GET ALL DONORS
-    # =====================================================
-
-    donors = conn.execute("""
-        SELECT *
-        FROM donors
-        ORDER BY id DESC
-    """).fetchall()
-
-    # =====================================================
-    # GET ALL RECEIVERS
-    # =====================================================
-
-    receivers = conn.execute("""
-        SELECT *
-        FROM receivers
-        ORDER BY id DESC
-    """).fetchall()
-
-    # =====================================================
-    # GET ALL BLOOD REQUESTS
-    # =====================================================
-
-    blood_requests = conn.execute("""
-        SELECT *
-        FROM blood_requests
-        ORDER BY id DESC
-    """).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "admin.html",
-        donors=donors,
-        receivers=receivers,
-        requests=blood_requests
+        city=city,
+        compatible_groups=compatible_groups
     )
 
 
@@ -720,33 +902,15 @@ def admin():
 @app.route("/profile")
 def profile():
 
-    # User must be logged in
-    if "user_id" not in session:
+    user = get_current_user()
 
-        return redirect(url_for("login"))
+    if not user:
+        return redirect("/login")
 
     conn = get_db()
 
-    user = conn.execute("""
-        SELECT *
-        FROM users
-        WHERE id = ?
-    """, (session["user_id"],)).fetchone()
-
-    if user is None:
-
-        conn.close()
-
-        session.clear()
-
-        return redirect(url_for("login"))
-
     donor = None
     receiver = None
-
-    # =====================================================
-    # DONOR PROFILE
-    # =====================================================
 
     if user["role"] == "donor":
 
@@ -754,11 +918,9 @@ def profile():
             SELECT *
             FROM donors
             WHERE user_id = ?
-        """, (user["id"],)).fetchone()
-
-    # =====================================================
-    # RECEIVER PROFILE
-    # =====================================================
+        """, (
+            user["id"],
+        )).fetchone()
 
     elif user["role"] == "receiver":
 
@@ -766,7 +928,9 @@ def profile():
             SELECT *
             FROM receivers
             WHERE user_id = ?
-        """, (user["id"],)).fetchone()
+        """, (
+            user["id"],
+        )).fetchone()
 
     conn.close()
 
@@ -779,11 +943,531 @@ def profile():
 
 
 # =========================================================
-# RUN APPLICATION
+# ALL REQUESTS
+# =========================================================
+
+@app.route("/requests")
+def requests():
+
+    user = get_current_user()
+
+    if not user:
+        return redirect("/login")
+
+    conn = get_db()
+
+    blood_requests = conn.execute("""
+        SELECT *
+        FROM blood_requests
+        ORDER BY id DESC
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "requests.html",
+        requests=blood_requests
+    )
+
+
+# =========================================================
+# ADMIN DASHBOARD
+# =========================================================
+
+@app.route("/admin")
+def admin():
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    donors = conn.execute("""
+        SELECT *
+        FROM donors
+        ORDER BY id DESC
+    """).fetchall()
+
+    receivers = conn.execute("""
+        SELECT *
+        FROM receivers
+        ORDER BY id DESC
+    """).fetchall()
+
+    blood_requests = conn.execute("""
+        SELECT *
+        FROM blood_requests
+        ORDER BY id DESC
+    """).fetchall()
+
+    donor_count = len(donors)
+    receiver_count = len(receivers)
+    request_count = len(blood_requests)
+
+    conn.close()
+
+    return render_template(
+        "admin.html",
+        donors=donors,
+        receivers=receivers,
+        blood_requests=blood_requests,
+        donor_count=donor_count,
+        receiver_count=receiver_count,
+        request_count=request_count
+    )
+
+
+# =========================================================
+# ADMIN - EDIT DONOR
+# =========================================================
+
+@app.route("/admin/edit-donor/<int:donor_id>", methods=["GET", "POST"])
+def edit_donor(donor_id):
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    donor = conn.execute("""
+        SELECT *
+        FROM donors
+        WHERE id = ?
+    """, (
+        donor_id,
+    )).fetchone()
+
+    if not donor:
+        conn.close()
+        return redirect("/admin")
+
+    if request.method == "POST":
+
+        name = request.form.get(
+            "name",
+            ""
+        ).strip()
+
+        blood_group = request.form.get(
+            "blood_group",
+            ""
+        ).strip()
+
+        phone = request.form.get(
+            "phone",
+            ""
+        ).strip()
+
+        city = request.form.get(
+            "city",
+            ""
+        ).strip()
+
+        last_donation_date = request.form.get(
+            "last_donation_date",
+            ""
+        ).strip()
+
+        if not valid_name_or_city(name):
+            conn.close()
+
+            return render_template(
+                "edit_donor.html",
+                donor=donor,
+                error="Name must contain characters and spaces only."
+            )
+
+        if not valid_blood_group(blood_group):
+            conn.close()
+
+            return render_template(
+                "edit_donor.html",
+                donor=donor,
+                error="Invalid blood group."
+            )
+
+        if not valid_phone(phone):
+            conn.close()
+
+            return render_template(
+                "edit_donor.html",
+                donor=donor,
+                error="Phone number must contain exactly 10 digits."
+            )
+
+        if not valid_name_or_city(city):
+            conn.close()
+
+            return render_template(
+                "edit_donor.html",
+                donor=donor,
+                error="City must contain characters and spaces only."
+            )
+
+        try:
+
+            donation_date = datetime.strptime(
+                last_donation_date,
+                "%Y-%m-%d"
+            ).date()
+
+            if donation_date > date.today():
+                conn.close()
+
+                return render_template(
+                    "edit_donor.html",
+                    donor=donor,
+                    error="Donation date cannot be in the future."
+                )
+
+        except ValueError:
+
+            conn.close()
+
+            return render_template(
+                "edit_donor.html",
+                donor=donor,
+                error="Invalid donation date."
+            )
+
+        conn.execute("""
+            UPDATE donors
+            SET
+                name = ?,
+                blood_group = ?,
+                phone = ?,
+                city = ?,
+                last_donation_date = ?
+            WHERE id = ?
+        """, (
+            name,
+            blood_group,
+            phone,
+            city,
+            last_donation_date,
+            donor_id
+        ))
+
+        # Update name in users table also
+        conn.execute("""
+            UPDATE users
+            SET name = ?
+            WHERE id = ?
+        """, (
+            name,
+            donor["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/admin")
+
+    conn.close()
+
+    return render_template(
+        "edit_donor.html",
+        donor=donor
+    )
+
+
+# =========================================================
+# ADMIN - DELETE DONOR
+# =========================================================
+
+@app.route("/admin/delete-donor/<int:donor_id>", methods=["POST"])
+def delete_donor(donor_id):
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    donor = conn.execute("""
+        SELECT user_id
+        FROM donors
+        WHERE id = ?
+    """, (
+        donor_id,
+    )).fetchone()
+
+    if donor:
+
+        conn.execute("""
+            DELETE FROM donors
+            WHERE id = ?
+        """, (
+            donor_id,
+        ))
+
+        conn.execute("""
+            DELETE FROM users
+            WHERE id = ?
+            AND role = 'donor'
+        """, (
+            donor["user_id"],
+        ))
+
+        conn.commit()
+
+    conn.close()
+
+    return redirect("/admin")
+
+
+# =========================================================
+# ADMIN - EDIT RECEIVER
+# =========================================================
+
+@app.route("/admin/edit-receiver/<int:receiver_id>", methods=["GET", "POST"])
+def edit_receiver(receiver_id):
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    receiver = conn.execute("""
+        SELECT *
+        FROM receivers
+        WHERE id = ?
+    """, (
+        receiver_id,
+    )).fetchone()
+
+    if not receiver:
+        conn.close()
+        return redirect("/admin")
+
+    if request.method == "POST":
+
+        name = request.form.get(
+            "name",
+            ""
+        ).strip()
+
+        blood_group = request.form.get(
+            "blood_group",
+            ""
+        ).strip()
+
+        hospital = request.form.get(
+            "hospital",
+            ""
+        ).strip()
+
+        city = request.form.get(
+            "city",
+            ""
+        ).strip()
+
+        if not valid_name_or_city(name):
+
+            conn.close()
+
+            return render_template(
+                "edit_receiver.html",
+                receiver=receiver,
+                error="Name must contain characters and spaces only."
+            )
+
+        if not valid_blood_group(blood_group):
+
+            conn.close()
+
+            return render_template(
+                "edit_receiver.html",
+                receiver=receiver,
+                error="Invalid blood group."
+            )
+
+        if not hospital:
+
+            conn.close()
+
+            return render_template(
+                "edit_receiver.html",
+                receiver=receiver,
+                error="Hospital name is required."
+            )
+
+        if not valid_name_or_city(city):
+
+            conn.close()
+
+            return render_template(
+                "edit_receiver.html",
+                receiver=receiver,
+                error="City must contain characters and spaces only."
+            )
+
+        conn.execute("""
+            UPDATE receivers
+            SET
+                name = ?,
+                blood_group = ?,
+                hospital = ?,
+                city = ?
+            WHERE id = ?
+        """, (
+            name,
+            blood_group,
+            hospital,
+            city,
+            receiver_id
+        ))
+
+        # Update name in users table
+        conn.execute("""
+            UPDATE users
+            SET name = ?
+            WHERE id = ?
+        """, (
+            name,
+            receiver["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/admin")
+
+    conn.close()
+
+    return render_template(
+        "edit_receiver.html",
+        receiver=receiver
+    )
+
+
+# =========================================================
+# ADMIN - DELETE RECEIVER
+# =========================================================
+
+@app.route("/admin/delete-receiver/<int:receiver_id>", methods=["POST"])
+def delete_receiver(receiver_id):
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    receiver = conn.execute("""
+        SELECT user_id
+        FROM receivers
+        WHERE id = ?
+    """, (
+        receiver_id,
+    )).fetchone()
+
+    if receiver:
+
+        # Delete receiver's blood requests first
+        conn.execute("""
+            DELETE FROM blood_requests
+            WHERE receiver_id = ?
+        """, (
+            receiver_id,
+        ))
+
+        # Delete receiver
+        conn.execute("""
+            DELETE FROM receivers
+            WHERE id = ?
+        """, (
+            receiver_id,
+        ))
+
+        # Delete receiver login
+        conn.execute("""
+            DELETE FROM users
+            WHERE id = ?
+            AND role = 'receiver'
+        """, (
+            receiver["user_id"],
+        ))
+
+        conn.commit()
+
+    conn.close()
+
+    return redirect("/admin")
+
+
+# =========================================================
+# ADMIN - DELETE BLOOD REQUEST
+# =========================================================
+
+@app.route("/admin/delete-request/<int:request_id>", methods=["POST"])
+def delete_request(request_id):
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    conn.execute("""
+        DELETE FROM blood_requests
+        WHERE id = ?
+    """, (
+        request_id,
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+
+# =========================================================
+# ADMIN - MARK REQUEST AS DELIVERED
+# =========================================================
+
+@app.route("/admin/deliver-request/<int:request_id>", methods=["POST"])
+def deliver_request(request_id):
+
+    user = get_current_user()
+
+    if not user or user["role"] != "admin":
+        return redirect("/login")
+
+    conn = get_db()
+
+    conn.execute("""
+        UPDATE blood_requests
+        SET status = ?
+        WHERE id = ?
+    """, (
+        "Successfully Delivered",
+        request_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+
+# =========================================================
+# START APPLICATION
 # =========================================================
 
 if __name__ == "__main__":
 
     create_database()
 
-    app.run(debug=True)
+    app.run(
+        debug=True
+    )

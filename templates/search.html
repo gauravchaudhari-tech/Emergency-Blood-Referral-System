@@ -27,7 +27,9 @@
 
     <nav>
 
-        <a href="/">Home</a>
+        <a href="/">
+            Home
+        </a>
 
         <a href="/donor-register">
             Donate
@@ -53,15 +55,35 @@
 
 <div class="search-container">
 
-    <h1>Find Blood Donor</h1>
+
+    <h1>
+        Find Blood Donor
+    </h1>
+
 
     <p class="form-info">
-        Search donors by blood group and city
+
+        Search for compatible donors
+        by blood group and city.
+
     </p>
 
 
+    {% if error %}
 
-    <!-- SEARCH FORM -->
+        <div class="error">
+
+            {{ error }}
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- =================================================
+         SEARCH FORM
+    ================================================== -->
 
     <form method="GET"
           action="/search"
@@ -79,43 +101,67 @@
                 Select Blood Group
             </option>
 
+
             <option value="A+"
-                {% if blood_group == "A+" %}selected{% endif %}>
+                {% if blood_group == "A+" %}
+                    selected
+                {% endif %}>
                 A+
             </option>
 
+
             <option value="A-"
-                {% if blood_group == "A-" %}selected{% endif %}>
+                {% if blood_group == "A-" %}
+                    selected
+                {% endif %}>
                 A-
             </option>
 
+
             <option value="B+"
-                {% if blood_group == "B+" %}selected{% endif %}>
+                {% if blood_group == "B+" %}
+                    selected
+                {% endif %}>
                 B+
             </option>
 
+
             <option value="B-"
-                {% if blood_group == "B-" %}selected{% endif %}>
+                {% if blood_group == "B-" %}
+                    selected
+                {% endif %}>
                 B-
             </option>
 
+
             <option value="AB+"
-                {% if blood_group == "AB+" %}selected{% endif %}>
+                {% if blood_group == "AB+" %}
+                    selected
+                {% endif %}>
                 AB+
             </option>
 
+
             <option value="AB-"
-                {% if blood_group == "AB-" %}selected{% endif %}>
+                {% if blood_group == "AB-" %}
+                    selected
+                {% endif %}>
                 AB-
             </option>
 
+
             <option value="O+"
-                {% if blood_group == "O+" %}selected{% endif %}>
+                {% if blood_group == "O+" %}
+                    selected
+                {% endif %}>
                 O+
             </option>
 
+
             <option value="O-"
-                {% if blood_group == "O-" %}selected{% endif %}>
+                {% if blood_group == "O-" %}
+                    selected
+                {% endif %}>
                 O-
             </option>
 
@@ -133,19 +179,25 @@
             name="city"
             placeholder="Enter city"
             value="{{ city }}"
+            pattern="[A-Za-z ]+"
+            title="City must contain characters and spaces only."
         >
 
 
 
         <button type="submit">
+
             🔍 Search Donors
+
         </button>
 
     </form>
 
 
 
-    <!-- RESULTS -->
+    <!-- =================================================
+         RESULTS
+    ================================================== -->
 
     {% if blood_group %}
 
@@ -153,17 +205,42 @@
         <div class="result-header">
 
             <h2 class="result-title">
-                Available Donors
+
+                Available Compatible Donors
+
             </h2>
 
+
             <p>
-                Blood Group:
-                <strong>{{ blood_group }}</strong>
+
+                Receiver Blood Group:
+
+                <strong>
+                    {{ blood_group }}
+                </strong>
+
+
+                {% if compatible_groups %}
+
+                    | Compatible Donor Groups:
+
+                    <strong>
+                        {{ compatible_groups|join(", ") }}
+                    </strong>
+
+                {% endif %}
+
 
                 {% if city %}
+
                     | Searching near:
-                    <strong>{{ city }}</strong>
+
+                    <strong>
+                        {{ city }}
+                    </strong>
+
                 {% endif %}
+
             </p>
 
         </div>
@@ -173,10 +250,9 @@
         {% if donors %}
 
 
-            <!--
-                SAME CITY DONORS
-                First priority
-            -->
+            <!-- =================================================
+                 SAME CITY DONORS
+            ================================================== -->
 
             {% if city %}
 
@@ -185,21 +261,29 @@
 
                 {% for donor in donors %}
 
+
                     {% if donor["city"]|trim|lower == city|trim|lower %}
+
 
                         {% if not same_city_found %}
 
                             {% set same_city_found = true %}
 
+
                             <div class="matching-section">
 
                                 <h2 class="section-title">
+
                                     📍 Donors in {{ city }}
+
                                 </h2>
 
+
                                 <p class="section-info">
-                                    These donors match your blood group
-                                    and are from your selected city.
+
+                                    Compatible donors from your
+                                    selected city are shown first.
+
                                 </p>
 
                             </div>
@@ -207,7 +291,9 @@
                         {% endif %}
 
 
+
                         <div class="donor-card same-city">
+
 
                             <div class="blood-circle">
 
@@ -216,44 +302,63 @@
                             </div>
 
 
+
                             <div class="donor-info">
 
                                 <h2>
+
                                     {{ donor["name"] }}
+
                                 </h2>
 
-                                <p>
-                                    📍 {{ donor["city"] }}
-                                </p>
 
                                 <p>
-                                    📞 {{ donor["phone"] }}
+
+                                    📍 {{ donor["city"] }}
+
                                 </p>
+
+
+                                <p>
+
+                                    📞 {{ donor["phone"] }}
+
+                                </p>
+
 
                                 <p>
 
                                     Blood Group:
 
                                     <strong>
+
                                         {{ donor["blood_group"] }}
+
                                     </strong>
 
                                 </p>
 
+
                             </div>
+
 
 
                             <div class="match-status">
 
                                 <span class="available">
-                                    ⭐ Nearby Match
+
+                                    ⭐ Nearby Compatible Match
+
                                 </span>
 
                             </div>
 
+
                         </div>
 
+
                     {% endif %}
+
 
                 {% endfor %}
 
@@ -261,23 +366,27 @@
 
 
 
-            <!--
-                OTHER CITY DONORS
-                Backup matching donors
-            -->
+            <!-- =================================================
+                 OTHER CITY DONORS
+            ================================================== -->
 
             {% if city %}
 
                 <div class="other-city-section">
 
                     <h2 class="section-title">
+
                         🌎 Donors from Other Cities
+
                     </h2>
 
+
                     <p class="section-info">
-                        No problem if a donor is not available
-                        in your city. These donors have the same
-                        blood group and may be contacted.
+
+                        These donors have a compatible
+                        blood group and have completed
+                        the required 3-month donation interval.
+
                     </p>
 
                 </div>
@@ -288,10 +397,12 @@
 
             {% for donor in donors %}
 
+
                 {% if not city or donor["city"]|trim|lower != city|trim|lower %}
 
 
                     <div class="donor-card other-city">
+
 
                         <div class="blood-circle">
 
@@ -300,20 +411,27 @@
                         </div>
 
 
+
                         <div class="donor-info">
 
                             <h2>
+
                                 {{ donor["name"] }}
+
                             </h2>
 
 
                             <p>
+
                                 📍 {{ donor["city"] }}
+
                             </p>
 
 
                             <p>
+
                                 📞 {{ donor["phone"] }}
+
                             </p>
 
 
@@ -322,7 +440,9 @@
                                 Blood Group:
 
                                 <strong>
+
                                     {{ donor["blood_group"] }}
+
                                 </strong>
 
                             </p>
@@ -330,18 +450,23 @@
                         </div>
 
 
+
                         <div class="match-status">
 
                             <span class="available">
-                                ✔ Blood Match
+
+                                ✔ Compatible Match
+
                             </span>
 
                         </div>
+
 
                     </div>
 
 
                 {% endif %}
+
 
             {% endfor %}
 
@@ -350,34 +475,67 @@
         {% else %}
 
 
-            <!-- NO DONOR -->
+            <!-- =================================================
+                 NO DONOR
+            ================================================== -->
 
             <div class="no-result">
 
+
                 <h2>
-                    ❌ No Donor Found
+
+                    ❌ No Eligible Donor Found
+
                 </h2>
+
 
                 <p>
 
-                    No donor with blood group
+                    No eligible donor is currently
+                    available for
 
                     <strong>
                         {{ blood_group }}
-                    </strong>
-
-                    is currently registered.
+                    </strong>.
 
                 </p>
+
+
+                {% if compatible_groups %}
+
+                    <p>
+
+                        Compatible donor groups:
+
+                        <strong>
+                            {{ compatible_groups|join(", ") }}
+                        </strong>
+
+                    </p>
+
+                {% endif %}
+
+
+                <p>
+
+                    Donors are shown only when
+                    3 complete months have passed
+                    since their last donation.
+
+                </p>
+
 
                 {% if city %}
 
                     <p>
-                        Try searching another city or
-                        check again later.
+
+                        Try searching another city
+                        or check again later.
+
                     </p>
 
                 {% endif %}
+
 
             </div>
 

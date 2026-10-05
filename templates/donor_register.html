@@ -25,7 +25,9 @@
 
     <nav>
 
-        <a href="/">Home</a>
+        <a href="/">
+            Home
+        </a>
 
         <a href="/donor-register">
             Donate
@@ -64,15 +66,22 @@
 
     <form method="POST">
 
+
+        <!-- NAME -->
+
         <label>Full Name</label>
 
         <input
             type="text"
             name="name"
             placeholder="Enter your name"
+            pattern="[A-Za-z ]+"
+            title="Name must contain characters and spaces only."
             required
         >
 
+
+        <!-- EMAIL -->
 
         <label>Email</label>
 
@@ -84,6 +93,8 @@
         >
 
 
+        <!-- PASSWORD -->
+
         <label>Password</label>
 
         <input
@@ -93,6 +104,8 @@
             required
         >
 
+
+        <!-- BLOOD GROUP -->
 
         <label>Blood Group</label>
 
@@ -114,15 +127,24 @@
         </select>
 
 
+        <!-- PHONE -->
+
         <label>Phone Number</label>
 
         <input
             type="text"
             name="phone"
-            placeholder="Enter phone number"
+            placeholder="Enter 10 digit phone number"
+            minlength="10"
+            maxlength="10"
+            pattern="[0-9]{10}"
+            inputmode="numeric"
+            title="Phone number must contain exactly 10 digits."
             required
         >
 
+
+        <!-- CITY -->
 
         <label>City</label>
 
@@ -130,9 +152,31 @@
             type="text"
             name="city"
             placeholder="Enter city"
+            pattern="[A-Za-z ]+"
+            title="City must contain characters and spaces only."
             required
         >
 
+
+        <!-- LAST DONATION DATE -->
+
+        <label>
+            Last Blood Donation Date
+        </label>
+
+        <input
+            type="date"
+            name="last_donation_date"
+            required
+        >
+
+        <p class="form-info">
+            Donor will be shown in matching results only
+            after 3 months are completed from the last donation.
+        </p>
+
+
+        <!-- REGISTER BUTTON -->
 
         <button type="submit">
             Register as Donor

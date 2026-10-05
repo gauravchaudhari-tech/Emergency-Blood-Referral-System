@@ -19,10 +19,6 @@
 <body>
 
 
-<!-- =====================================================
-     HEADER
-===================================================== -->
-
 <header>
 
     <div class="logo">
@@ -56,12 +52,8 @@
 </header>
 
 
-
-<!-- =====================================================
-     DASHBOARD
-===================================================== -->
-
 <div class="dashboard">
+
 
     <!-- =================================================
          WELCOME
@@ -71,10 +63,10 @@
         Receiver Dashboard
     </h1>
 
+
     <p class="welcome">
         Welcome, {{ receiver["name"] }}! 👋
     </p>
-
 
 
     <!-- =================================================
@@ -122,30 +114,43 @@
     </div>
 
 
-
     <!-- =================================================
-         MATCHING DONORS
+         SMART MATCHING DONORS
     ================================================== -->
 
     <h2 class="section-title">
 
-        🩸 Matching Donors
+        🩸 Smart Matching Donors
 
     </h2>
 
 
     <p class="section-info">
 
-        Donors with blood group
-        <strong>{{ receiver["blood_group"] }}</strong>
-        are shown below.
+        Your required blood group is
+
+        <strong>
+            {{ receiver["blood_group"] }}
+        </strong>.
+
+        Compatible donor groups:
+
+        <strong>
+            {{ compatible_groups|join(", ") }}
+        </strong>.
 
         Donors from
-        <strong>{{ receiver["city"] }}</strong>
+
+        <strong>
+            {{ receiver["city"] }}
+        </strong>
+
         are displayed first.
 
-    </p>
+        Only donors who have completed 3 months
+        since their last donation are shown.
 
+    </p>
 
 
     <!-- =================================================
@@ -225,7 +230,6 @@
     {% endif %}
 
 
-
     <!-- =================================================
          OTHER CITY DONORS
     ================================================== -->
@@ -303,7 +307,6 @@
     {% endif %}
 
 
-
     <!-- =================================================
          NO DONOR FOUND
     ================================================== -->
@@ -313,14 +316,14 @@
         <div class="no-data">
 
             <h2>
-                😔 No Matching Donor Found
+                😔 No Eligible Matching Donor Found
             </h2>
 
 
             <p>
 
-                Currently, no donor is registered
-                with blood group
+                Currently, no eligible donor is available
+                for blood group
 
                 <strong>
                     {{ receiver["blood_group"] }}
@@ -331,15 +334,26 @@
 
             <p>
 
-                You can check again later when
-                new donors register.
+                Compatible groups are:
+
+                <strong>
+                    {{ compatible_groups|join(", ") }}
+                </strong>
+
+            </p>
+
+
+            <p>
+
+                Donors are displayed only after
+                completing 3 months from their
+                last blood donation.
 
             </p>
 
         </div>
 
     {% endif %}
-
 
 
     <!-- =================================================
@@ -368,9 +382,10 @@
                 type="text"
                 name="patient_name"
                 value="{{ receiver['name'] }}"
+                pattern="[A-Za-z ]+"
+                title="Patient name must contain characters and spaces only."
                 required
             >
-
 
 
             <label>
@@ -470,7 +485,6 @@
             </select>
 
 
-
             <label>
                 Hospital
             </label>
@@ -484,7 +498,6 @@
             >
 
 
-
             <label>
                 City
             </label>
@@ -494,9 +507,10 @@
                 type="text"
                 name="city"
                 value="{{ receiver['city'] }}"
+                pattern="[A-Za-z ]+"
+                title="City must contain characters and spaces only."
                 required
             >
-
 
 
             <button type="submit">
@@ -511,7 +525,6 @@
     </div>
 
 
-
     <!-- =================================================
          MY REQUESTS
     ================================================== -->
@@ -521,7 +534,6 @@
         My Requests
 
     </h2>
-
 
 
     {% if requests %}
@@ -538,6 +550,17 @@
                         Request #{{ req["id"] }}
 
                     </h3>
+
+
+                    <p>
+
+                        Patient:
+
+                        <strong>
+                            {{ req["patient_name"] }}
+                        </strong>
+
+                    </p>
 
 
                     <p>

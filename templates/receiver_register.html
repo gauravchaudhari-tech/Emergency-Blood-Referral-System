@@ -25,7 +25,9 @@
 
     <nav>
 
-        <a href="/">Home</a>
+        <a href="/">
+            Home
+        </a>
 
         <a href="/donor-register">
             Donate
@@ -64,15 +66,21 @@
 
     <form method="POST">
 
+        <!-- PATIENT NAME -->
+
         <label>Patient Name</label>
 
         <input
             type="text"
             name="name"
             placeholder="Enter patient name"
+            pattern="[A-Za-z ]+"
+            title="Patient name must contain characters and spaces only."
             required
         >
 
+
+        <!-- EMAIL -->
 
         <label>Email</label>
 
@@ -84,6 +92,8 @@
         >
 
 
+        <!-- PASSWORD -->
+
         <label>Password</label>
 
         <input
@@ -93,6 +103,8 @@
             required
         >
 
+
+        <!-- BLOOD GROUP -->
 
         <label>Blood Group Required</label>
 
@@ -114,6 +126,8 @@
         </select>
 
 
+        <!-- HOSPITAL -->
+
         <label>Hospital Name</label>
 
         <input
@@ -124,12 +138,16 @@
         >
 
 
+        <!-- CITY -->
+
         <label>City</label>
 
         <input
             type="text"
             name="city"
             placeholder="Enter city"
+            pattern="[A-Za-z ]+"
+            title="City must contain characters and spaces only."
             required
         >
 

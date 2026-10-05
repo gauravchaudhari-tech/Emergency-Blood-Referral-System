@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Edit Receiver</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <style>
+
+        .edit-container {
+            width: 90%;
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+        }
+
+        .edit-container h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .update-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 7px;
+            background: #27ae60;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            text-decoration: none;
+            color: #3498db;
+        }
+
+        .error-message {
+            color: red;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="edit-container">
+
+    <h1>Edit Receiver</h1>
+
+    {% if error %}
+
+        <div class="error-message">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <form method="POST">
+
+
+        <!-- NAME -->
+
+        <div class="form-group">
+
+            <label>Full Name</label>
+
+            <input
+                type="text"
+                name="name"
+                value="{{ receiver['name'] }}"
+                pattern="[A-Za-z ]+"
+                title="Name must contain characters and spaces only."
+                required
+            >
+
+        </div>
+
+
+        <!-- BLOOD GROUP -->
+
+        <div class="form-group">
+
+            <label>Blood Group</label>
+
+            <select
+                name="blood_group"
+                required
+            >
+
+                {% for group in blood_groups %}
+
+                    <option
+                        value="{{ group }}"
+                        {% if receiver['blood_group'] == group %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ group }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <!-- HOSPITAL -->
+
+        <div class="form-group">
+
+            <label>Hospital</label>
+
+            <input
+                type="text"
+                name="hospital"
+                value="{{ receiver['hospital'] }}"
+                required
+            >
+
+        </div>
+
+
+        <!-- CITY -->
+
+        <div class="form-group">
+
+            <label>City</label>
+
+            <input
+                type="text"
+                name="city"
+                value="{{ receiver['city'] }}"
+                pattern="[A-Za-z ]+"
+                title="City must contain characters and spaces only."
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="update-btn"
+        >
+            Update Receiver
+        </button>
+
+    </form>
+
+
+    <a
+        href="{{ url_for('admin') }}"
+        class="back-btn"
+    >
+        ← Back to Admin Dashboard
+    </a>
+
+</div>
+
+</body>
+
+</html>
