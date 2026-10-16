@@ -47,6 +47,22 @@
 <div class="dashboard">
 
     <h1>Donor Dashboard</h1>
+    
+     <!-- Notifications -->
+    <div class="notification-section">
+        <h2>🔔 Notifications</h2>
+
+        {% if notifications %}
+            {% for notification in notifications %}
+                <div class="notification-card">
+                    <p>{{ notification["message"] }}</p>
+                    <small>{{ notification["created_at"] }}</small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No notifications yet.</p>
+        {% endif %}
+    </div>
 
     <p class="welcome">
         Welcome, {{ donor["name"] }}!

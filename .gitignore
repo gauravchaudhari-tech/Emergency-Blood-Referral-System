@@ -1,4 +1,35 @@
+
+# Environment variables and secrets
 .env
-database.db
+.env.*
+!.env.example
+
+# Python virtual environment
+.venv/
+venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+
+# Database files
+database.db
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Private donor certificates and uploads
+private_uploads/
+uploads/
+
+# Instance and backup files
+instance/
+*.bak
+*.backup
+
+# IDE and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

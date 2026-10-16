@@ -1,201 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Donor Registration</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Registration - SmartBlood</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
-
 <header>
-
-    <div class="logo">
-        🩸 SmartBlood
-    </div>
-
+    <div class="logo">🩸 SmartBlood</div>
     <nav>
-
-        <a href="/">
-            Home
-        </a>
-
-        <a href="/donor-register">
-            Donate
-        </a>
-
-        <a href="/receiver-register">
-            Need Blood
-        </a>
-
-        <a href="/login">
-            Login
-        </a>
-
+        <a href="/">Home</a>
+        <a href="/donor-register">Donate</a>
+        <a href="/receiver-register">Need Blood</a>
+        <a href="/login">Login</a>
     </nav>
-
 </header>
 
-
 <div class="form-container">
-
     <h1>Donor Registration</h1>
-
-    <p class="form-info">
-        Register as a blood donor
-    </p>
-
+    <p class="form-info">Register as a blood donor</p>
 
     {% if error %}
-
-    <div class="error">
-        {{ error }}
-    </div>
-
+        <div class="error">{{ error }}</div>
     {% endif %}
 
+    <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-    <form method="POST">
+        <label for="name">Full Name</label>
+        <input id="name" type="text" name="name" placeholder="Enter your name"
+               pattern="[A-Za-z ]+" title="Name must contain letters and spaces only." required>
 
-
-        <!-- NAME -->
-
-        <label>Full Name</label>
-
-        <input
-            type="text"
-            name="name"
-            placeholder="Enter your name"
-            pattern="[A-Za-z ]+"
-            title="Name must contain characters and spaces only."
-            required
-        >
-
-
-        <!-- EMAIL -->
-
-        <label>Email</label>
-
+        <label for="email">Email</label>
         <input
             type="email"
             name="email"
-            placeholder="Enter email"
+            pattern="[a-z0-9._%+-]+@gmail\.com"
+            title="Enter lowercase Gmail address only."
+            placeholder="Enter your Gmail address"
             required
         >
 
-
-        <!-- PASSWORD -->
-
-        <label>Password</label>
-
+        
+        <label for="password">Password</label>
+        <div class="password-wrapper">
         <input
             type="password"
+            id="password"
             name="password"
-            placeholder="Create password"
+            placeholder="Enter password"
+            minlength="8"
             required
         >
+        <span class="password-toggle"
+          onclick="togglePassword()">👁</span>
+</div>
+
+<script>
+function togglePassword() {
+    const password = document.getElementById("password");
+    password.type =
+        password.type === "password" ? "text" : "password";
+}
+</script>
 
 
-        <!-- BLOOD GROUP -->
 
-        <label>Blood Group</label>
+        <label for="age">Age (years)</label>
+        <input id="age" type="number" name="age" min="18" max="120" step="1"
+               placeholder="Minimum age: 18 years" required>
+        <p class="form-info">Minimum registration age is 18 years. Final donor eligibility must be checked by an authorized blood bank.</p>
 
-        <select name="blood_group" required>
+        <label for="weight_kg">Weight (kg)</label>
+        <input id="weight_kg" type="number" name="weight_kg" min="50" max="300" step="0.1"
+               placeholder="Minimum weight: 50 kg" required>
+        <p class="form-info">The 50 kg threshold is a project rule, not a substitute for official donor screening.</p>
 
-            <option value="">
-                Select Blood Group
-            </option>
-
-            <option>A+</option>
-            <option>A-</option>
-            <option>B+</option>
-            <option>B-</option>
-            <option>AB+</option>
-            <option>AB-</option>
-            <option>O+</option>
-            <option>O-</option>
-
+        <label for="blood_group">Blood Group</label>
+        <select id="blood_group" name="blood_group" required>
+            <option value="">Select Blood Group</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
         </select>
 
-
-        <!-- PHONE -->
-
-        <label>Phone Number</label>
-
-        <input
-            type="text"
-            name="phone"
-            placeholder="Enter 10 digit phone number"
-            minlength="10"
-            maxlength="10"
-            pattern="[0-9]{10}"
-            inputmode="numeric"
-            title="Phone number must contain exactly 10 digits."
-            required
-        >
-
-
-        <!-- CITY -->
-
-        <label>City</label>
-
-        <input
-            type="text"
-            name="city"
-            placeholder="Enter city"
-            pattern="[A-Za-z ]+"
-            title="City must contain characters and spaces only."
-            required
-        >
-
-
-        <!-- LAST DONATION DATE -->
-
-        <label>
-            Last Blood Donation Date
+        
+        <label for="blood_group_certificate">
+              Blood Group Certificate (PDF or JPG)
         </label>
 
         <input
-            type="date"
-            name="last_donation_date"
+            type="file"
+            id="blood_group_certificate"
+            name="blood_group_certificate"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
             required
         >
-
-        <p class="form-info">
-            Donor will be shown in matching results only
-            after 3 months are completed from the last donation.
+        <p class="help-text">
+            Allowed formats: PDF, JPG, JPEG, PNG
         </p>
 
 
-        <!-- REGISTER BUTTON -->
+        <label for="phone">Phone Number</label>
+        <input id="phone" type="text" name="phone" placeholder="Enter 10 digit phone number"
+               minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric"
+               title="Phone number must contain exactly 10 digits." required>
 
-        <button type="submit">
-            Register as Donor
-        </button>
+        <label for="city">City</label>
+        <input id="city" type="text" name="city" placeholder="Enter city"
+               pattern="[A-Za-z ]+" title="City must contain letters and spaces only." required>
 
+        <label for="last_donation_date">Last Blood Donation Date</label>
+        <input id="last_donation_date" type="date" name="last_donation_date" required>
+        <p class="form-info">Donors will be shown in matching results only after at least 3 months have passed since the last donation and after verification.</p>
+
+        <div class="consent-box">
+            <label class="consent-label">
+                <input type="checkbox" name="consent" value="yes" required>
+                I agree that SmartBlood may store my registration details and share relevant information with authorized hospital/blood-bank staff for blood donation coordination. I have read the Privacy Notice.
+            </label>
+            <a href="{{ url_for('privacy_notice') }}" target="_blank" rel="noopener">Read Privacy Notice</a>
+        </div>
+
+        <button type="submit">Register as Donor</button>
     </form>
 
-
-    <p class="bottom-text">
-
-        Already registered?
-
-        <!-- <a href="/login">
-            Login here
-        </a> -->
-
-    </p>
-
+    <p class="bottom-text">Already registered?</p>
 </div>
-
 </body>
 </html>

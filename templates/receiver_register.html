@@ -65,6 +65,7 @@
 
 
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <!-- PATIENT NAME -->
 
@@ -87,21 +88,36 @@
         <input
             type="email"
             name="email"
-            placeholder="Enter email"
+            pattern="[a-z0-9._%+-]+@gmail\.com"
+            title="Enter lowercase Gmail address only."
+            placeholder="Enter your Gmail address"
             required
         >
 
 
         <!-- PASSWORD -->
-
-        <label>Password</label>
-
+         
+        <label for="password">Password</label>
+        <div class="password-wrapper">
         <input
             type="password"
+            id="password"
             name="password"
-            placeholder="Create password"
+            placeholder="Enter password"
+            minlength="8"
             required
         >
+        <span class="password-toggle"
+          onclick="togglePassword()">👁</span>
+</div>
+
+<script>
+function togglePassword() {
+    const password = document.getElementById("password");
+    password.type =
+        password.type === "password" ? "text" : "password";
+}
+</script>
 
 
         <!-- BLOOD GROUP -->
@@ -150,6 +166,23 @@
             title="City must contain characters and spaces only."
             required
         >
+
+        <!-- CONSENT CHECKBOX -->
+
+        <div class="consent-box">
+
+            <label>
+                <input
+                    type="checkbox"
+                    name="consent"
+                    value="yes"
+                    required
+                >
+                I agree to the terms and conditions
+                and consent to register.
+            </label>
+
+        </div>
 
 
         <button type="submit">

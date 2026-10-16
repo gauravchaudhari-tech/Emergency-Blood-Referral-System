@@ -1689,3 +1689,56 @@ footer {
         padding: 30px 20px;
     }
 }
+
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 35px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 15px;
+    color: #555;
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+}
+
+
+.notification-section {
+    margin: 25px 0;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.notification-card {
+    margin-top: 12px;
+    padding: 12px 15px;
+    background: #fff0f0;
+    border-left: 4px solid #c62828;
+    border-radius: 6px;
+}
+
+.notification-card p {
+    margin: 0 0 6px;
+}
+
+.notification-card small {
+    color: #666;
+}
+
+
