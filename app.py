@@ -15,6 +15,7 @@ from werkzeug.utils import secure_filename
 from flask import Flask, request, redirect, session
 from email.message import EmailMessage
 from twilio.rest import Client
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
 
 load_dotenv()
 
@@ -1735,6 +1736,18 @@ load_dotenv()
 
 # Ensure schema/migrations run when launched by a WSGI server as well.
 create_database()
+
+@app.route("/sitemap.xml")
+def sitemap():
+    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url>
+            <loc>https://emergency-blood-referral-system.onrender.com/</loc>
+        </url>
+    </urlset>
+    """
+    return Response(sitemap_xml, mimetype="application/xml")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
